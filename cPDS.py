@@ -1,11 +1,12 @@
 import numpy as np
 import pywt
+import datetime
 
-import phe.paillier
+import util as util
 
 
 class cPDS:
-    def __init__(self, pk, S, L_p, theta, gammas, data, labels, q, n, x):
+    def __init__(self, agent_id, pk, S, L_p, theta, gammas, data, labels, q, n, x):
         self.tau = 10
         self.rho = 10
         self.S = S
@@ -17,11 +18,12 @@ class cPDS:
         self.q = q  # q[j] -> 1x250
         self.q_kminus1 = np.zeros((1, n))  # 1x250 init:0
         self.x = x  # x[j] -> 1xp (p=n°features+1)
-        self.lamda_kminus1 = np.zeros((4, 6))  # # 1x6 init:0
+        self.lamda_kminus1 = np.zeros((len(S[0]), 6))  # # 1x6 init:0
         self.n = n
         self.pk = pk
+        self.agent_id = agent_id
 
-    def compute(self, lambdaa):
+    def compute(self, m, lambdaa):
         # x-Update
         beta_k_j = self.x[:-1]
         beta_k_j0 = self.x[-1]
@@ -77,4 +79,8 @@ class cPDS:
         self.q = q_kplus1_j
         self.lamda_kminus1 = lambdaa
 
-        return self.pk.encryptMatrix(self.x)
+        time_pre = datetime.datetime.now()
+        x_enc = self.pk.encryptMatrix(self.x)
+        time_post = datetime.datetime.now()
+        util.writeIntoCSV(m, 'agent_' + str(self.agent_id), str((time_post - time_pre).total_seconds()))
+        return x_enc

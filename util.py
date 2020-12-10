@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.io as spio
+import os
+
 
 def local_degree(P, eps_deg):
     n = P.shape[0]
@@ -80,3 +82,12 @@ def loadDataCentralized():
     w_SSVM = x_opt[:-1]
     b_SSVM = x_opt[-1]
     return x_opt, w_SSVM, b_SSVM
+
+
+def writeIntoCSV(m, file_name, row):
+    path = 'logs' + os.sep + str(m) + '_agents'
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    with open(path + os.sep + file_name + '.csv', 'a') as fd:
+        fd.write(row + '\n')
