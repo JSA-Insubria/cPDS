@@ -64,3 +64,5 @@ def __main__(m):
 m = [10, 30, 60, 100]
 for i in m:
     __main__(i)
+
+util.computeAgentsMean(m)

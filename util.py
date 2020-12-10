@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.io as spio
 import os
+import pandas as pd
 
 
 def local_degree(P, eps_deg):
@@ -91,3 +92,30 @@ def writeIntoCSV(m, file_name, row):
 
     with open(path + os.sep + file_name + '.csv', 'a') as fd:
         fd.write(row + '\n')
+
+
+def computeAgentsMean(m):
+    first_line = "iteration n°,"
+    mean = pd.DataFrame()
+    for i in m:
+        first_line = first_line + str(i) + " Agents,,,"
+        path = 'logs' + os.sep + str(i) + "_agents" + os.sep
+        data = {}
+        for j in range(i):
+            data[j] = pd.read_csv(path + "agent_" + str(j) + ".csv", header=None)
+
+        df_tot = pd.concat(data, axis=1)
+        df_tot = df_tot.mean(axis=1).to_frame()
+        df_tot.columns = ['Encryption time']
+
+        aggr = pd.read_csv(path + "aggregator.csv", header=None)
+        aggr.columns = ['Sum time']
+
+        main = pd.read_csv(path + "main.csv", header=None)
+        main.columns = ['Decryption time']
+        mean = pd.concat([mean, df_tot, aggr, main], axis=1)
+
+    with open('logs' + os.sep + "time.csv", 'w') as fd:
+        fd.write(first_line + '\n')
+    mean = mean.round(3)
+    mean.to_csv('logs' + os.sep + "time.csv", mode='a')
