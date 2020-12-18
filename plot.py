@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
     # plot residuals
     plt.plot(residuals_x)
@@ -13,7 +14,7 @@ def plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
     plt.xlabel('Iterations')
     plt.show()
 
-    x_return = np.mean(x, 0)
+    x_return = np.mean(x, axis=0)
     w_cPDS = x_return[:-1]
     b_cPDS = x_return[-1]
 

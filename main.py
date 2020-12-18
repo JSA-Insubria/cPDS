@@ -26,20 +26,21 @@ def __main__(m):
 
     # define parameters
     t = 5
+    c = 2
     theta = t * np.eye(m) + np.diag(np.random.uniform(0, 1, m))  # size: m x m
     S = np.eye(m)
-    L_p = np.eye(m)
+    #L_p = np.eye(m)
+    L_p = L
 
     max_iters = 100
     residuals_x = np.zeros(max_iters, dtype=np.double)
 
     cPDSs = []
     for j in range(m):
-        cPDSs.append(cPDS.cPDS(j, pk_list[j], S, L_p[j, :], theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x[j]))
+        cPDSs.append(cPDS.cPDS(j, pk_list[j], S, L_p[j, :], c, theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x[j]))
 
-    #lambdaa = S @ L @ x
-    lambdaa = x - (L @ x)
-    aggregator = Aggr.Aggregator(pk_list[-1], L)
+    lambdaa = c * S @ L @ x
+    aggregator = Aggr.Aggregator(pk_list[-1], c, S, L)
 
     for i in range(max_iters):
         for j in range(m):
@@ -61,8 +62,9 @@ def __main__(m):
     plot.plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
 
 
-m = [10, 30, 60, 100]
+#m = [10, 30, 60, 100]
+m = [4]
 for i in m:
     __main__(i)
 
-util.computeAgentsMean(m)
+#util.computeAgentsMean(m)
