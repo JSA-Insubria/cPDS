@@ -5,6 +5,7 @@ import os
 import phe.paillier as paillier
 
 import util as util
+import graph_util as graph_util
 import cPDS as cPDS
 import plot as plot
 import Aggregator as Aggr
@@ -14,10 +15,10 @@ import datetime
 
 def __main__(m):
 
-    adj = nx.adjacency_matrix(nx.erdos_renyi_graph(m, 0.5))
+    adj = graph_util.get_graph(m, 0.5)
     L = np.eye(m) - util.local_degree(adj, 0.1)
 
-    mpk, msk, pk_list, sk_list = paillier.generate_braghin_keypair(m+1)
+    mpk, msk, pk_list, sk_list = paillier.generate_cPDS_keypair(m+1)
 
     xtrain, ytrain, xtest, ytest = util.loadData()
     x_opt, w_SSVM, b_SSVM = util.loadDataCentralized()
