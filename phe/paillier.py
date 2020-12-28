@@ -35,7 +35,7 @@ from phe.util import invert, powmod, getprimeover, isqrt
 DEFAULT_KEYSIZE = 3072
 
 
-def generate_braghin_keypair(m=4, n_length=DEFAULT_KEYSIZE):
+def generate_cPDS_keypair(m=4, n_length=DEFAULT_KEYSIZE):
     """Return a new :class:`PaillierPublicKey` and :class:`PaillierPrivateKey`.
 
     Add the private key to *private_keyring* if given.
@@ -209,7 +209,7 @@ class PaillierPublicKey(object):
             if matrix.ndim == 1:
                 for j in range(matrix.shape[0]):
                     matrix_encoded[j] = self.encrypt(matrix[j])
-                return matrix
+                return matrix_encoded
             else:
                 for i in range(matrix.shape[0]):
                     for j in range(matrix.shape[1]):
@@ -348,7 +348,7 @@ class PaillierPrivateKey(object):
             if matrix.ndim == 1:
                 for j in range(matrix.shape[0]):
                     matrix_decoded[j] = self.decrypt(matrix[j])
-                return matrix
+                return matrix_decoded
             else:
                 for i in range(matrix.shape[0]):
                     for j in range(matrix.shape[1]):
