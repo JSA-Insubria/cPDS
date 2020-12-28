@@ -39,7 +39,7 @@ def getSplitIndices(m, xtrain):
     return n_j_start, n_j_stop
 
 
-def initFederatedDataVar(m, xtrain):
+def initFederatedDataVar(m):
     n = np.zeros((m,), dtype=np.object)
     gammas = np.zeros((m,), dtype=np.object)
     data = np.zeros((m,), dtype=np.object)
@@ -49,7 +49,7 @@ def initFederatedDataVar(m, xtrain):
 
 def federatedData(m, xtrain, ytrain):
     n_j_start, n_j_stop = getSplitIndices(m, xtrain)
-    n, gammas, data, labels = initFederatedDataVar(m, xtrain)
+    n, gammas, data, labels = initFederatedDataVar(m)
     for j in range(m):
         n[j] = n_j_stop[j] - n_j_start[j] + 1
         gammas[j] = np.ones((1, n_j_stop[j] - n_j_start[j] + 1))
@@ -59,7 +59,7 @@ def federatedData(m, xtrain, ytrain):
     return n, gammas, data, labels
 
 
-def initcPDSVar(m, xtrain, gammas, n, data, labels):
+def initcPDSVar(m, xtrain, c, gammas, n, data, labels):
     x = np.random.normal(0, 1, (m, xtrain.shape[1] + 1))  # miu=0, sigma=1, size: m x p
     y = np.zeros((m,), dtype=np.object)
     q_kminus1 = np.zeros((m,), dtype=np.object)
@@ -67,7 +67,7 @@ def initcPDSVar(m, xtrain, gammas, n, data, labels):
     for j in range(m):
         y[j] = np.random.normal(0, 1, (1, n[j]))
         q_kminus1[j] = np.zeros((1, n[j]))
-        q[j] = gammas[j] * (np.einsum('ij,ij->i',
+        q[j] = c * gammas[j] * (np.einsum('ij,ij->i',
                                       np.concatenate([np.diag(labels[j]) @ data[j], labels[j].reshape(n[j], 1)],
                                                      axis=1),
                                       np.tile(x[j, :], (n[j], 1))) - y[j])
@@ -98,22 +98,34 @@ def computeAgentsMean(m):
     first_line = "iteration n°,"
     mean = pd.DataFrame()
     for i in m:
-        first_line = first_line + str(i) + " Agents,,,"
+        first_line = first_line + str(i) + " Agents,,,,,,,"
         path = 'logs' + os.sep + str(i) + "_agents" + os.sep
         data = {}
-        for j in range(i):
+        for j in range(i+1):
             data[j] = pd.read_csv(path + "agent_" + str(j) + ".csv", header=None)
 
+        df_agent = pd.concat(data, axis=1).iloc[:, :-1]
+        df_agent_sum = df_agent.sum(axis=1).to_frame()
+        df_agent_sum.columns = ['Encryption time sum - Agents (s)']
+        df_agent_mean = df_agent.mean(axis=1).to_frame()
+        df_agent_mean.columns = ['Encryption time mean - Agents (s)']
+
         df_tot = pd.concat(data, axis=1)
-        df_tot = df_tot.mean(axis=1).to_frame()
-        df_tot.columns = ['Encryption time']
+        df_tot_sum = df_tot.sum(axis=1).to_frame()
+        df_tot_sum.columns = ['Encryption time sum (s)']
+        df_tot_mean = df_tot.mean(axis=1).to_frame()
+        df_tot_mean.columns = ['Encryption time mean (s)']
 
         aggr = pd.read_csv(path + "aggregator.csv", header=None)
-        aggr.columns = ['Sum time']
+        aggr.columns = ['Sum time (s)']
 
         main = pd.read_csv(path + "main.csv", header=None)
-        main.columns = ['Decryption time']
-        mean = pd.concat([mean, df_tot, aggr, main], axis=1)
+        main.columns = ['Decryption time (s)']
+
+        iteration = pd.read_csv(path + "iteration_time.csv", header=None)
+        iteration.columns = ['Iteration time (s)']
+
+        mean = pd.concat([mean, df_agent_sum, df_agent_mean, df_tot_sum, df_tot_mean, aggr, main, iteration], axis=1)
 
     with open('logs' + os.sep + "time.csv", 'w') as fd:
         fd.write(first_line + '\n')

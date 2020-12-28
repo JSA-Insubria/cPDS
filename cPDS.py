@@ -84,8 +84,10 @@ class cPDS:
         self.q = q_kplus1_j
         self.lamda_kminus1 = lambdaa
 
-        time_pre = datetime.datetime.now()
-        x_enc = self.pk.encryptMatrix(self.x)
-        time_post = datetime.datetime.now()
-        util.writeIntoCSV(m, 'agent_' + str(self.agent_id), str((time_post - time_pre).total_seconds()))
-        return x_enc
+        #time_pre = datetime.datetime.now()
+        #x_enc = self.pk.encryptMatrix(self.x)
+        #time_post = datetime.datetime.now()
+        #util.writeIntoCSV(m, 'agent_' + str(self.agent_id), str((time_post - time_pre).total_seconds()))
+        #return x_enc
+
+        return self.x
