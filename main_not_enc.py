@@ -26,7 +26,7 @@ def agent_encrypt(cPDSs, lambdaa):
 def __main__(m):
 
     adj = graph_util.get_graph(m, 0.5)
-    L = np.eye(m) - util.local_degree(adj, 1)
+    L = np.eye(m) - util.local_degree(adj, 0.1)
 
     # define parameters
     t = 5

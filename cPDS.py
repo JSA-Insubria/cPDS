@@ -1,14 +1,11 @@
 import numpy as np
 import pywt
-import datetime
-
-import util as util
 
 
 class cPDS:
     def __init__(self, agent_id, S, L_p, theta, gammas, data, labels, q, n, x):
-        self.tau = 1
-        self.rho = 1
+        self.tau = 10
+        self.rho = 10
         self.S = S
         self.L_p = L_p  # L_p[j]
         self.theta = theta  # theta[j] -> 1xm
@@ -18,8 +15,7 @@ class cPDS:
         self.q = q  # q[j] -> 1x250
         self.q_kminus1 = np.zeros((1, n))  # 1x250 init:0
         self.x = x  # x[j] -> 1xp (p=n°features+1)
-        #self.lamda_kminus1 = np.zeros((len(S[0]), 6))  # # 1x6 init:0
-        self.lamda_kminus1 = np.zeros(6)  # # 1x6 init:0
+        self.lamda_kminus1 = np.zeros(len(x))  # # 1x6 init:0
         self.n = n
         self.agent_id = agent_id
 
@@ -35,14 +31,14 @@ class cPDS:
         # Beta_k+1_jt
         mu = (2 * self.rho) / (self.tau + self.theta)
         v1 = np.sum((self.gammas * self.labels * np.subtract(2 * self.q, self.q_kminus1)) @ self.data, axis=0)
-        v2 = np.subtract(2 * lambda_d_k, lambda_d_kminus1)
+        v2 = self.L_p @ self.S * np.subtract(2 * lambda_d_k, lambda_d_kminus1)
         v3 = - (self.theta * beta_k_j)
         u = -1 / (self.tau + self.theta) * (v1 + v2 + v3)
         beta_kplus1_jt = pywt.threshold(u, mu, 'soft')
 
         # Beta_k+1_j0
-        v1_0 = np.sum(self.gammas @ self.labels @ (2 * self.q - self.q_kminus1), axis=0)
-        v2_0 = (2 * lambda_dplus1_k - lamdba_dplus1_kminus1)
+        v1_0 = np.sum(self.gammas @ self.labels @ np.subtract(2 * self.q, self.q_kminus1), axis=0)
+        v2_0 = self.L_p @ self.S * np.subtract(2 * lambda_dplus1_k, lamdba_dplus1_kminus1)
         v3_0 = (self.theta * beta_k_j0)
         beta_kplus1_j0 = np.array([(- v1_0 - v2_0 + v3_0) / self.theta])
 
