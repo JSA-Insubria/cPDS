@@ -59,7 +59,7 @@ def federatedData(m, xtrain, ytrain):
     return n, gammas, data, labels
 
 
-def initcPDSVar(m, xtrain, c, gammas, n, data, labels):
+def initcPDSVar(m, xtrain, gammas, n, data, labels):
     x = np.random.normal(0, 1, (m, xtrain.shape[1] + 1))  # miu=0, sigma=1, size: m x p
     y = np.zeros((m,), dtype=np.object)
     q_kminus1 = np.zeros((m,), dtype=np.object)
@@ -67,7 +67,7 @@ def initcPDSVar(m, xtrain, c, gammas, n, data, labels):
     for j in range(m):
         y[j] = np.random.normal(0, 1, (1, n[j]))
         q_kminus1[j] = np.zeros((1, n[j]))
-        q[j] = c * gammas[j] * (np.einsum('ij,ij->i',
+        q[j] = gammas[j] * (np.einsum('ij,ij->i',
                                       np.concatenate([np.diag(labels[j]) @ data[j], labels[j].reshape(n[j], 1)],
                                                      axis=1),
                                       np.tile(x[j, :], (n[j], 1))) - y[j])

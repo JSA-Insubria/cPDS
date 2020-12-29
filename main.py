@@ -1,6 +1,4 @@
-import networkx as nx
 import numpy as np
-import os
 
 import phe.paillier as paillier
 
@@ -8,7 +6,6 @@ import util as util
 import graph_util as graph_util
 import cPDS as cPDS
 import plot as plot
-import Aggregator as Aggr
 
 import datetime
 
@@ -18,21 +15,21 @@ def save_time(m, file, time_pre):
     util.writeIntoCSV(m, file, str((time_post - time_pre).total_seconds()))
 
 
-def aggregator_sum(m, pk, lambdaa, c, S, L, encrypted_x):
+def aggregator_sum(m, pk, lambdaa, S, L, encrypted_x):
     time_pre = datetime.datetime.now()
     lambdaa_encrypted_k = pk.encryptMatrix(lambdaa)
     save_time(m, 'agent_' + str(m), time_pre)
 
     time_pre = datetime.datetime.now()
     # lambda = lambda + c * S2 * L2 * x;
-    lambdaa_encrypted_k_plus_1 = lambdaa_encrypted_k + c * S @ L @ encrypted_x
+    lambdaa_encrypted_k_plus_1 = lambdaa_encrypted_k + S @ L @ encrypted_x
     save_time(m, 'aggregator', time_pre)
 
     return lambdaa_encrypted_k_plus_1
 
 
 def agent_encrypt(cPDSs, m, lambdaa, pk, j):
-    x_tmp = cPDSs.compute(m, lambdaa)
+    x_tmp = cPDSs.compute(lambdaa)
     time_pre = datetime.datetime.now()
     x_enc = pk.encryptMatrix(x_tmp)
     save_time(m, 'agent_' + str(j), time_pre)
@@ -48,20 +45,19 @@ def main_decrypt(m, msk, lambdaa_encrypted):
 
 def __main__(m):
 
-    adj = graph_util.get_graph(m, 0.5)
+    adj = graph_util.get_graph(m, 0.2)
     L = np.eye(m) - util.local_degree(adj, 0.1)
 
     mpk, msk, pk_list, sk_list = paillier.generate_cPDS_keypair(m+1)
 
     # define parameters
     t = 5
-    c = 2
 
     xtrain, ytrain, xtest, ytest = util.loadData()
     x_opt, w_SSVM, b_SSVM = util.loadDataCentralized()
 
     n, gammas, data, labels = util.federatedData(m, xtrain, ytrain)
-    x_init, y, q_kminus1, q = util.initcPDSVar(m, xtrain, c, gammas, n, data, labels)
+    x_init, y, q_kminus1, q = util.initcPDSVar(m, xtrain, gammas, n, data, labels)
 
     # define parameters
     theta = t * np.eye(m) + np.diag(np.random.uniform(0, 1, m))  # size: m x m
@@ -75,23 +71,22 @@ def __main__(m):
 
     cPDSs = []
     for j in range(m):
-        cPDSs.append(cPDS.cPDS(j, pk_list[j], S, L_p[j, :], c, theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x_init[j]))
+        cPDSs.append(cPDS.cPDS(j, S[j], L_p[j], theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x_init[j]))
 
-    lambdaa = c * S @ L @ x_init
-    #aggregator = Aggr.Aggregator(pk_list[-1], c, S, L)
+    lambdaa = S @ L @ x_init
     total_time_pre = datetime.datetime.now()
 
     for i in range(max_iters):
         iteration_time_pre = datetime.datetime.now()
         for j in range(m):
-            x[j] = agent_encrypt(cPDSs[j], m, lambdaa, pk_list[j], j)
+            x[j] = agent_encrypt(cPDSs[j], m, lambdaa[j], pk_list[j], j)
 
         # sum lambdaa
-        lambdaa_encrypted = aggregator_sum(m, pk_list[-1], lambdaa, c, S, L, x)
+        lambdaa_encrypted = aggregator_sum(m, pk_list[-1], lambdaa, S, L, x)
 
         # decrypt lambdaa
         lambdaa = main_decrypt(m, msk, lambdaa_encrypted)
-        # residuals_x[iter] = np.linalg.norm(msk.decryptMatrix(x) - (np.ones((m, 1)) * x_opt))
+        #residuals_x[iter] = np.linalg.norm(msk.decryptMatrix(x) - (np.ones((m, 1)) * x_opt))
 
         save_time(m, 'iteration_time', iteration_time_pre)
 
