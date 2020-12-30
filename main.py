@@ -45,8 +45,8 @@ def main_decrypt(m, msk, lambdaa_encrypted):
 
 def __main__(m):
 
-    adj = graph_util.get_graph(m, 0.2)
-    L = np.eye(m) - util.local_degree(adj, 0.1)
+    adj = graph_util.get_graph(m, 0.5)
+    L = np.eye(m) - util.local_degree(adj, 1)
 
     mpk, msk, pk_list, sk_list = paillier.generate_cPDS_keypair(m+1)
 

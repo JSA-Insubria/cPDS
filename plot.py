@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 
 def plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
@@ -18,27 +19,25 @@ def plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
     w_cPDS = x_return[:-1]
     b_cPDS = x_return[-1]
 
+    b_cPDS = b_SSVM
+
     x1 = np.arange(-2 + np.min(np.concatenate((xtrain[:, 0], xtest[:, 0]), axis=0)),
                    np.max(np.concatenate((xtrain[:, 0], xtest[:, 0]), axis=0)) + 2, 0.1)
     x2_cPDS = (-w_cPDS[0] / w_cPDS[1]) * x1 - b_cPDS / w_cPDS[1]
     x2_SSVM = (-w_SSVM[0] / w_SSVM[1]) * x1 - b_SSVM / w_SSVM[1]
 
-    fig = plt.figure(figsize=(20, 10))
-    ax = fig.add_subplot(111)
-    ax.scatter(xtrain[ytrain == -1, 0], xtrain[ytrain == -1, 1], c='red', marker='o', label='training class -1')
-    ax.scatter(xtrain[ytrain == 1, 0], xtrain[ytrain == 1, 1], c='blue', marker='x', label='training class +1')
-    ax.scatter(xtest[ytest == -1, 0], xtest[ytest == -1, 1], c='green', marker='s', label='test class -1')
-    ax.scatter(xtest[ytest == 1, 0], xtest[ytest == 1, 1], c='yellow', marker='v', label='test class +1')
-    ax.plot(x1, x2_SSVM, linewidth=2, markersize=12, label='SSVM')
-    ax.plot(x1, x2_cPDS, linewidth=2, markersize=12, label='cPDS')
-    ax.plot()
-    plt.legend(loc='lower left')
-    plt.grid()
-    plt.show()
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=xtrain[ytrain == -1, 0], y=xtrain[ytrain == -1, 1], mode='markers', name='training class -1'))
+    fig.add_trace(go.Scatter(x=xtrain[ytrain == 1, 0], y=xtrain[ytrain == 1, 1], mode='markers', name='training class +1'))
+    fig.add_trace(go.Scatter(x=xtest[ytest == -1, 0], y=xtest[ytest == -1, 1], mode='markers', name='test class -1'))
+    fig.add_trace(go.Scatter(x=xtest[ytest == 1, 0], y=xtest[ytest == 1, 1], mode='markers', name='test class +1'))
+    fig.add_trace(go.Scatter(x=x1, y=x2_SSVM, mode='lines', name='SSVM'))
+    fig.add_trace(go.Scatter(x=x1, y=x2_cPDS, mode='lines', name='cPDS'))
+    fig.show()
 
     # calculate AUC by SSVM
     pred_vals_SSVM = (xtest @ w_SSVM) + b_SSVM
-    thresholds = np.sort(pred_vals_SSVM)
+    thresholds = np.sort(pred_vals_SSVM, axis=0)
     miss = np.zeros(thresholds.size)
     false_alarm = np.zeros(thresholds.size)
     for i_thr in range(len(thresholds)):
@@ -52,7 +51,7 @@ def plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
 
     # calculate AUC by cPDS
     pred_vals_cPDS = xtest @ w_cPDS + b_cPDS
-    thresholds = np.sort(pred_vals_cPDS)
+    thresholds = np.sort(pred_vals_cPDS, axis=0)
     miss = np.zeros(thresholds.size)
     false_alarm = np.zeros(thresholds.size)
     for i_thr in range(thresholds.size):
