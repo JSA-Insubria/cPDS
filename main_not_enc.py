@@ -38,7 +38,7 @@ def __main__(m):
     x, y, q_kminus1, q = util.initcPDSVar(m, xtrain, gammas, n, data, labels)
 
     # define parameters
-    theta = t * np.diag(np.random.uniform(0, 1, m))
+    theta = t * np.eye(m) + np.diag(np.random.uniform(0, 1, m))  # size: m x m
     S = np.eye(m)
     L_p = L
 
@@ -68,8 +68,8 @@ def __main__(m):
     plot.plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
 
 
-#m = [10, 30, 60, 100]
-m = [10]
+#m = [5, 10, 20, 30]
+m = [4]
 for i in m:
     __main__(i)
 

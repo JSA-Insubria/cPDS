@@ -37,11 +37,10 @@ class cPDS:
         beta_kplus1_jt = pywt.threshold(u, mu, 'soft')
 
         # Beta_k+1_j0
-        v1_0 = np.sum(self.gammas @ self.labels @ np.subtract(2 * self.q, self.q_kminus1), axis=0)
+        v1_0 = np.sum(self.gammas * self.labels * np.subtract(2 * self.q, self.q_kminus1), axis=1)
         v2_0 = self.L_p @ self.S * np.subtract(2 * lambda_dplus1_k, lamdba_dplus1_kminus1)
         v3_0 = - self.theta * beta_k_j0
-        beta_kplus1_j0 = np.array([- (v1_0 + v2_0 + v3_0) / self.theta])
-        print(beta_kplus1_j0)
+        beta_kplus1_j0 = - (v1_0 + v2_0 + v3_0) / self.theta
 
         self.x = np.concatenate([beta_kplus1_jt, beta_kplus1_j0])
 

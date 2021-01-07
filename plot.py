@@ -19,7 +19,10 @@ def plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
     w_cPDS = x_return[:-1]
     b_cPDS = x_return[-1]
 
-    b_cPDS = b_SSVM
+    print("w_SSVM: ", w_SSVM)
+    print("w_cPDS: ", w_cPDS)
+    print("b_SSVM: ", b_SSVM)
+    print("b_cPDS: ", b_cPDS)
 
     x1 = np.arange(-2 + np.min(np.concatenate((xtrain[:, 0], xtest[:, 0]), axis=0)),
                    np.max(np.concatenate((xtrain[:, 0], xtest[:, 0]), axis=0)) + 2, 0.1)

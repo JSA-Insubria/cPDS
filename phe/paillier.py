@@ -32,7 +32,7 @@ from phe.util import invert, powmod, getprimeover, isqrt
 # Paillier cryptosystem is based on integer factorisation.
 # The default is chosen to give a minimum of 128 bits of security.
 # https://www.keylength.com/en/4/
-DEFAULT_KEYSIZE = 3072
+DEFAULT_KEYSIZE = 2048
 
 
 def generate_cPDS_keypair(m=4, n_length=DEFAULT_KEYSIZE):
@@ -204,19 +204,12 @@ class PaillierPublicKey(object):
         return random.SystemRandom().randrange(1, self.n)
 
     def encryptMatrix(self, matrix):
-        if isinstance(matrix, (np.ndarray, np.generic)):
-            matrix_encoded = np.empty(shape=matrix.shape, dtype=object)
-            if matrix.ndim == 1:
-                for j in range(matrix.shape[0]):
-                    matrix_encoded[j] = self.encrypt(matrix[j])
-                return matrix_encoded
-            else:
-                for i in range(matrix.shape[0]):
-                    for j in range(matrix.shape[1]):
-                        matrix_encoded[i][j] = self.encrypt(matrix[i][j])
-                return matrix_encoded
+        if matrix.ndim == 1:
+            matrix_encoded = np.asarray([self.encrypt(matrix[i]) for i in range(matrix.shape[0])])
+            return matrix_encoded
         else:
-            return matrix
+            matrix_encoded = np.asarray([[self.encrypt(matrix[i][j]) for j in range(matrix.shape[1])] for i in range(matrix.shape[0])])
+            return matrix_encoded
 
     def encrypt(self, value, precision=None, r_value=None):
         """Encode and Paillier encrypt a real number *value*.
@@ -343,19 +336,12 @@ class PaillierPrivateKey(object):
         return "<PaillierPrivateKey for {}>".format(pub_repr)
 
     def decryptMatrix(self, matrix):
-        if isinstance(matrix, (np.ndarray, np.generic)):
-            matrix_decoded = np.empty(shape=matrix.shape)
-            if matrix.ndim == 1:
-                for j in range(matrix.shape[0]):
-                    matrix_decoded[j] = self.decrypt(matrix[j])
-                return matrix_decoded
-            else:
-                for i in range(matrix.shape[0]):
-                    for j in range(matrix.shape[1]):
-                        matrix_decoded[i][j] = self.decrypt(matrix[i][j])
-                return matrix_decoded
+        if matrix.ndim == 1:
+            matrix_decoded = np.asarray([self.decrypt(matrix[i]) for i in range(matrix.shape[0])])
+            return matrix_decoded
         else:
-            return matrix
+            matrix_decoded = np.asarray([[self.decrypt(matrix[i][j]) for j in range(matrix.shape[1])] for i in range(matrix.shape[0])])
+            return matrix_decoded
 
     def decrypt(self, encrypted_number):
         """Return the decrypted & decoded plaintext of *encrypted_number*.

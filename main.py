@@ -96,7 +96,7 @@ def __main__(m):
     plot.plot(residuals_x, x_dec, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
 
 
-#m = [10, 30, 60, 100]
+#m = [5, 10, 20, 30]
 m = [4]
 for i in m:
     __main__(i)
