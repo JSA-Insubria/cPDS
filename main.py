@@ -86,7 +86,7 @@ def __main__(m):
 
         # decrypt lambdaa
         lambdaa = main_decrypt(m, msk, lambdaa_encrypted)
-        #residuals_x[iter] = np.linalg.norm(msk.decryptMatrix(x) - (np.ones((m, 1)) * x_opt))
+        residuals_x[i] = np.linalg.norm(msk.decryptMatrix(x) - (np.ones((m, 1)) * x_opt))
 
         save_time(m, 'iteration_time', iteration_time_pre)
 
@@ -97,7 +97,7 @@ def __main__(m):
 
 
 #m = [5, 10, 20, 30]
-m = [4]
+m = [5]
 for i in m:
     __main__(i)
 

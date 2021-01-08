@@ -65,7 +65,7 @@ L = np.eye(m) - W # doubly stochastic weight matrix of the graph
 
 # --------------------- Load Data ---------------------
 # load the data (for now synthetic mat datasets)
-mat = spio.loadmat('../../test/data/dataset3.mat', squeeze_me=True)
+mat = spio.loadmat('../data/dataset3.mat', squeeze_me=True)
 xtrain = mat['xtrain']
 ytrain = mat['ytrain']
 training_label_distr = np.unique(ytrain, return_counts=True)
@@ -106,7 +106,7 @@ for j in range(m):
 # --------------------- Load Data Centralized Approach ---------------------
 
 # Load optimal solution computed by centralized approach
-mat = spio.loadmat('../../test/data/sSVM_gurobi.mat', squeeze_me=True)
+mat = spio.loadmat('../data/sSVM_gurobi.mat', squeeze_me=True)
 x_opt = mat['theta_opt_SSVM']
 # x_opt = np.array([0.7738, 0.7131, 0.0000, 0.0433, -0.0112, 0.0462])
 w_SSVM = x_opt[:-1]
