@@ -3,6 +3,12 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
 
+def plot_error(error, max_iter):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=np.arange(max_iter)+1, y=error, mode='lines+markers', name='error'))
+    fig.show()
+
+
 def plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
     # plot residuals
     plt.plot(residuals_x)

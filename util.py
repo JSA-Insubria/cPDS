@@ -98,21 +98,25 @@ def computeAgentsMean(m):
     first_line = "iteration n°,"
     mean = pd.DataFrame()
     for i in m:
-        first_line = first_line + str(i) + " Agents,,,,,,,"
+        first_line = first_line + str(i) + " Agents,,,,,,,,,"
         path = 'logs' + os.sep + str(i) + "_agents" + os.sep
         data = {}
         for j in range(i+1):
             data[j] = pd.read_csv(path + "agent_" + str(j) + ".csv", header=None)
 
         df_agent = pd.concat(data, axis=1).iloc[:, :-1]
-        df_agent_sum = df_agent.sum(axis=1).to_frame()
-        df_agent_sum.columns = ['Encryption time sum - Agents (s)']
+        df_agent_max = df_agent.max(axis=1).to_frame()
+        df_agent_max.columns = ['Encryption time max - Agents (s)']
+        df_agent_min = df_agent.min(axis=1).to_frame()
+        df_agent_min.columns = ['Encryption time min - Agents (s)']
         df_agent_mean = df_agent.mean(axis=1).to_frame()
         df_agent_mean.columns = ['Encryption time mean - Agents (s)']
 
         df_tot = pd.concat(data, axis=1)
-        df_tot_sum = df_tot.sum(axis=1).to_frame()
-        df_tot_sum.columns = ['Encryption time sum (s)']
+        df_tot_max = df_tot.max(axis=1).to_frame()
+        df_tot_max.columns = ['Encryption time max (s)']
+        df_tot_min = df_tot.min(axis=1).to_frame()
+        df_tot_min.columns = ['Encryption time min (s)']
         df_tot_mean = df_tot.mean(axis=1).to_frame()
         df_tot_mean.columns = ['Encryption time mean (s)']
 
@@ -125,7 +129,7 @@ def computeAgentsMean(m):
         iteration = pd.read_csv(path + "iteration_time.csv", header=None)
         iteration.columns = ['Iteration time (s)']
 
-        mean = pd.concat([mean, df_agent_sum, df_agent_mean, df_tot_sum, df_tot_mean, aggr, main, iteration], axis=1)
+        mean = pd.concat([mean, df_agent_max, df_agent_min, df_agent_mean, df_tot_max, df_tot_min, df_tot_mean, aggr, main, iteration], axis=1)
 
     with open('logs' + os.sep + "time.csv", 'w') as fd:
         fd.write(first_line + '\n')

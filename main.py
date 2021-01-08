@@ -10,6 +10,24 @@ import plot as plot
 import datetime
 
 
+def compute_error(xtrain, ytrain, x):
+    x_return = np.mean(x, axis=0)
+    w_cPDS = x_return[:-1]
+    b_cPDS = x_return[-1]
+
+    pred_vals_cPDS = xtrain @ w_cPDS + b_cPDS
+    thresholds = np.sort(pred_vals_cPDS, axis=0)
+    miss = np.zeros(thresholds.size)
+    false_alarm = np.zeros(thresholds.size)
+    for i_thr in range(thresholds.size):
+        ypred = (pred_vals_cPDS <= thresholds[i_thr]) + 0
+        ypred[ypred == 0] = -1
+        miss[i_thr] = np.sum(np.logical_and(ypred == -1, ytrain == 1)) / np.sum(ytrain == 1)
+        false_alarm[i_thr] = np.sum(np.logical_and(ypred == 1, ytrain == -1)) / np.sum(ytrain == -1)
+
+    return np.abs(np.trapz(false_alarm, 1 - miss))
+
+
 def save_time(m, file, time_pre):
     time_post = datetime.datetime.now()
     util.writeIntoCSV(m, file, str((time_post - time_pre).total_seconds()))
@@ -62,7 +80,6 @@ def __main__(m):
     # define parameters
     theta = t * np.eye(m) + np.diag(np.random.uniform(0, 1, m))  # size: m x m
     S = np.eye(m)
-    #L_p = np.eye(m)
     L_p = L
 
     max_iters = 100
@@ -72,6 +89,8 @@ def __main__(m):
     cPDSs = []
     for j in range(m):
         cPDSs.append(cPDS.cPDS(j, S[j], L_p[j], theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x_init[j]))
+
+    error = []
 
     lambdaa = S @ L @ x_init
     total_time_pre = datetime.datetime.now()
@@ -86,13 +105,16 @@ def __main__(m):
 
         # decrypt lambdaa
         lambdaa = main_decrypt(m, msk, lambdaa_encrypted)
-        residuals_x[i] = np.linalg.norm(msk.decryptMatrix(x) - (np.ones((m, 1)) * x_opt))
+        x_dec = msk.decryptMatrix(x)
+        residuals_x[i] = np.linalg.norm(x_dec - (np.ones((m, 1)) * x_opt))
 
         save_time(m, 'iteration_time', iteration_time_pre)
+        error.append(1 - compute_error(xtrain, ytrain, x_dec))
 
     save_time(m, 'execution_time', total_time_pre)
 
     x_dec = msk.decryptMatrix(x)
+    plot.plot_error(error, max_iters)
     plot.plot(residuals_x, x_dec, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
 
 
