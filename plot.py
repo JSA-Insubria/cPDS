@@ -3,9 +3,28 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
 
+def compute_error(xtrain, ytrain, x):
+    x_return = np.mean(x, axis=0)
+    w_cPDS = x_return[:-1]
+    b_cPDS = x_return[-1]
+
+    pred_vals_cPDS = xtrain @ w_cPDS + b_cPDS
+    thresholds = np.sort(pred_vals_cPDS, axis=0)
+    miss = np.zeros(thresholds.size)
+    false_alarm = np.zeros(thresholds.size)
+    for i_thr in range(thresholds.size):
+        ypred = (pred_vals_cPDS <= thresholds[i_thr]) + 0
+        ypred[ypred == 0] = -1
+        miss[i_thr] = np.sum(np.logical_and(ypred == -1, ytrain == 1)) / np.sum(ytrain == 1)
+        false_alarm[i_thr] = np.sum(np.logical_and(ypred == 1, ytrain == -1)) / np.sum(ytrain == -1)
+
+    return np.abs(np.trapz(false_alarm, 1 - miss))
+
+
 def plot_error(error, max_iter):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=np.arange(max_iter)+1, y=error, mode='lines+markers', name='error'))
+    fig.update_layout(title='Error', xaxis_title='Iter', yaxis_title='AUC')
     fig.show()
 
 
@@ -42,6 +61,7 @@ def plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
     fig.add_trace(go.Scatter(x=xtest[ytest == 1, 0], y=xtest[ytest == 1, 1], mode='markers', name='test class +1'))
     fig.add_trace(go.Scatter(x=x1, y=x2_SSVM, mode='lines', name='SSVM'))
     fig.add_trace(go.Scatter(x=x1, y=x2_cPDS, mode='lines', name='cPDS'))
+    fig.update_layout(title='AUC')
     fig.show()
 
     # calculate AUC by SSVM

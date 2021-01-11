@@ -6,26 +6,9 @@ import util as util
 import graph_util as graph_util
 import cPDS as cPDS
 import plot as plot
+import extra as extra
 
 import datetime
-
-
-def compute_error(xtrain, ytrain, x):
-    x_return = np.mean(x, axis=0)
-    w_cPDS = x_return[:-1]
-    b_cPDS = x_return[-1]
-
-    pred_vals_cPDS = xtrain @ w_cPDS + b_cPDS
-    thresholds = np.sort(pred_vals_cPDS, axis=0)
-    miss = np.zeros(thresholds.size)
-    false_alarm = np.zeros(thresholds.size)
-    for i_thr in range(thresholds.size):
-        ypred = (pred_vals_cPDS <= thresholds[i_thr]) + 0
-        ypred[ypred == 0] = -1
-        miss[i_thr] = np.sum(np.logical_and(ypred == -1, ytrain == 1)) / np.sum(ytrain == 1)
-        false_alarm[i_thr] = np.sum(np.logical_and(ypred == 1, ytrain == -1)) / np.sum(ytrain == -1)
-
-    return np.abs(np.trapz(false_alarm, 1 - miss))
 
 
 def save_time(m, file, time_pre):
@@ -58,6 +41,14 @@ def main_decrypt(m, lambdaa_encrypted):
     return lambdaa
 
 
+def main_iter_error(x_opt, xtrain, ytrain, x):
+    residuals_x = np.linalg.norm(x - (np.ones((m, 1)) * x_opt))
+
+    #error = (1 - plot.compute_error(xtrain, ytrain, x_dec))
+    error = (1 - extra.compute_error_extra(xtrain, ytrain, x))
+    return residuals_x, error
+
+
 def __main__(m):
 
     adj = graph_util.get_graph(m, 0.5)
@@ -66,7 +57,9 @@ def __main__(m):
     # define parameters
     t = 5
 
-    xtrain, ytrain, xtest, ytest = util.loadData()
+    # xtrain, ytrain, xtest, ytest = util.loadData()
+    xtrain, ytrain, xtest, ytest = extra.loadData_extra()
+
     x_opt, w_SSVM, b_SSVM = util.loadDataCentralized()
 
     n, gammas, data, labels = util.federatedData(m, xtrain, ytrain)
@@ -79,12 +72,11 @@ def __main__(m):
 
     max_iters = 100
     residuals_x = np.zeros(max_iters, dtype=np.double)
+    error_x = np.zeros(max_iters, dtype=np.double)
 
     cPDSs = []
     for j in range(m):
         cPDSs.append(cPDS.cPDS(j, S[j], L_p[j], theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x[j]))
-
-    error = []
 
     lambdaa = S @ L @ x
     total_time_pre = datetime.datetime.now()
@@ -99,15 +91,17 @@ def __main__(m):
 
         # decrypt lambdaa
         lambdaa = main_decrypt(m, lambdaa)
-        residuals_x[i] = np.linalg.norm(x - (np.ones((m, 1)) * x_opt))
+
+        # compute residual and error
+        residuals_x[i], error_x[i] = main_iter_error(x_opt, xtrain, ytrain, x)
 
         save_time(m, 'iteration_time', iteration_time_pre)
-        error.append(1 - compute_error(xtrain, ytrain, x))
 
     save_time(m, 'execution_time', total_time_pre)
 
-    plot.plot_error(error, max_iters)
-    plot.plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
+    plot.plot_error(error_x, max_iters)
+    #plot.plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
+    extra.plot_extra(x, xtrain, xtest, ytrain, ytest)
 
 
 #m = [5, 10, 20, 30]
