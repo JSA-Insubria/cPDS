@@ -41,12 +41,12 @@ def main_decrypt(m, lambdaa_encrypted):
     return lambdaa
 
 
-def main_iter_error(x_opt, xtrain, ytrain, x):
+def main_iter_error(m, x_opt, xtrain, ytrain, x):
     residuals_x = np.linalg.norm(x - (np.ones((m, 1)) * x_opt))
 
-    #error = (1 - plot.compute_error(xtrain, ytrain, x_dec))
-    error = (1 - extra.compute_error_extra(xtrain, ytrain, x))
-    return residuals_x, error
+    error_x = (1 - plot.compute_error(xtrain, ytrain, x))
+    #error_x = (1 - extra.compute_error_extra(xtrain, ytrain, x))
+    return residuals_x, error_x
 
 
 def __main__(m):
@@ -57,8 +57,8 @@ def __main__(m):
     # define parameters
     t = 5
 
-    # xtrain, ytrain, xtest, ytest = util.loadData()
-    xtrain, ytrain, xtest, ytest = extra.loadData_extra()
+    xtrain, ytrain, xtest, ytest = util.loadData()
+    #xtrain, ytrain, xtest, ytest = extra.loadData_extra()
 
     x_opt, w_SSVM, b_SSVM = util.loadDataCentralized()
 
@@ -93,19 +93,19 @@ def __main__(m):
         lambdaa = main_decrypt(m, lambdaa)
 
         # compute residual and error
-        residuals_x[i], error_x[i] = main_iter_error(x_opt, xtrain, ytrain, x)
+        #residuals_x[i], error_x[i] = main_iter_error(m, x_opt, xtrain, ytrain, x)
 
         save_time(m, 'iteration_time', iteration_time_pre)
 
     save_time(m, 'execution_time', total_time_pre)
 
     plot.plot_error(error_x, max_iters)
-    #plot.plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
-    extra.plot_extra(x, xtrain, xtest, ytrain, ytest)
+    plot.plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
+    #extra.plot_extra(x, xtrain, xtest, ytrain, ytest)
 
 
-#m = [5, 10, 20, 30]
-m = [5]
+m = [5, 10, 20, 30]
+#m = [5]
 for i in m:
     __main__(i)
 
