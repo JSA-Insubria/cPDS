@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -8,7 +9,7 @@ import plotly.graph_objects as go
 
 # --- util ---
 def loadData_extra():
-    dataset = pd.read_csv('data/HIGGS.csv', nrows=10000)
+    dataset = pd.read_csv('data' + os.sep + 'HIGGS.csv', nrows=10000)
     y = dataset.iloc[:, 0].to_numpy()
     x = dataset.iloc[:, 1:].to_numpy()
 

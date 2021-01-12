@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -28,7 +29,7 @@ def plot_error(error, max_iter):
     fig.show()
 
 
-def plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
+def plot(m, gp_param, residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
     # plot residuals
     plt.plot(residuals_x)
     plt.ylabel('Residuals x')
@@ -91,3 +92,6 @@ def plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
 
     AUC_cPDS = np.abs(np.trapz(false_alarm, 1 - miss))
     print("AUC cPDS: ", AUC_cPDS)
+
+    with open('logs' + os.sep + "auc.csv", 'a') as fd:
+        fd.write(str(m) + ',' + str(gp_param) + ',' + str(AUC_cPDS) + '\n')

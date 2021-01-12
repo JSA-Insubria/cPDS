@@ -51,8 +51,10 @@ def main_iter_error(m, x_opt, xtrain, ytrain, x):
 
 def __main__(m):
 
-    adj = graph_util.get_graph(m, 0.5)
-    L = np.eye(m) - util.local_degree(adj, 1)
+    #adj = graph_util.get_graph(m, 0.1)
+    #L = np.eye(m) - util.local_degree(adj, 1)
+
+    L = graph_util.read_graph(m)
 
     # define parameters
     t = 5
@@ -104,8 +106,8 @@ def __main__(m):
     #extra.plot_extra(x, xtrain, xtest, ytrain, ytest)
 
 
-m = [5, 10, 20, 30]
-#m = [5]
+#m = [5, 10, 20, 30]
+m = [5, 10]
 for i in m:
     __main__(i)
 

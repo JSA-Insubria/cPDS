@@ -18,7 +18,7 @@ def local_degree(P, eps_deg):
 
 
 def loadData():
-    mat = spio.loadmat('data/dataset3.mat', squeeze_me=True)
+    mat = spio.loadmat('data' + os.sep + 'dataset3.mat', squeeze_me=True)
     xtrain = mat['xtrain']
     ytrain = mat['ytrain']
     xtest = mat['xtest']
@@ -77,7 +77,7 @@ def initcPDSVar(m, xtrain, gammas, n, data, labels):
 
 def loadDataCentralized():
     # Load optimal solution computed by centralized approach
-    mat = spio.loadmat('data/sSVM_gurobi.mat', squeeze_me=True)
+    mat = spio.loadmat('data' + os.sep + 'sSVM_gurobi.mat', squeeze_me=True)
     x_opt = mat['theta_opt_SSVM']
     # x_opt = np.array([0.7738, 0.7131, 0.0000, 0.0433, -0.0112, 0.0462])
     w_SSVM = x_opt[:-1]
@@ -85,8 +85,8 @@ def loadDataCentralized():
     return x_opt, w_SSVM, b_SSVM
 
 
-def writeIntoCSV(m, file_name, row):
-    path = 'logs' + os.sep + str(m) + '_agents'
+def writeIntoCSV(m, folder_name, file_name, row):
+    path = 'logs' + os.sep + folder_name + os.sep + str(m) + '_agents'
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -94,44 +94,42 @@ def writeIntoCSV(m, file_name, row):
         fd.write(row + '\n')
 
 
-def computeAgentsMean(m):
-    first_line = "iteration n°,"
-    mean = pd.DataFrame()
-    for i in m:
-        first_line = first_line + str(i) + " Agents,,,,,,,,,"
-        path = 'logs' + os.sep + str(i) + "_agents" + os.sep
-        data = {}
-        for j in range(i+1):
-            data[j] = pd.read_csv(path + "agent_" + str(j) + ".csv", header=None)
+def computeAgentsMean(m, graph_param):
+    folder = ['enc_' + str(graph_param), 'not_' + str(graph_param)]
+    for file in folder:
+        path_file = 'logs' + os.sep + file + os.sep
+        first_line = "iteration n°,"
+        mean = pd.DataFrame()
+        for i in m:
+            first_line = first_line + str(i) + " Agents,,,,,,,"
+            path = path_file + str(i) + "_agents" + os.sep
+            data = {}
+            for j in range(i+1):
+                data[j] = pd.read_csv(path + "agent_" + str(j) + ".csv", header=None)
 
-        df_agent = pd.concat(data, axis=1).iloc[:, :-1]
-        df_agent_max = df_agent.max(axis=1).to_frame()
-        df_agent_max.columns = ['Encryption time max - Agents (s)']
-        df_agent_min = df_agent.min(axis=1).to_frame()
-        df_agent_min.columns = ['Encryption time min - Agents (s)']
-        df_agent_mean = df_agent.mean(axis=1).to_frame()
-        df_agent_mean.columns = ['Encryption time mean - Agents (s)']
+            df_agent = pd.concat(data, axis=1).iloc[:, :-1]
+            df_agent_max = df_agent.max(axis=1).to_frame()
+            df_agent_max.columns = ['Encryption time max - Agents (s)']
+            df_agent_min = df_agent.min(axis=1).to_frame()
+            df_agent_min.columns = ['Encryption time min - Agents (s)']
+            df_agent_mean = df_agent.mean(axis=1).to_frame()
+            df_agent_mean.columns = ['Encryption time mean - Agents (s)']
 
-        df_tot = pd.concat(data, axis=1)
-        df_tot_max = df_tot.max(axis=1).to_frame()
-        df_tot_max.columns = ['Encryption time max (s)']
-        df_tot_min = df_tot.min(axis=1).to_frame()
-        df_tot_min.columns = ['Encryption time min (s)']
-        df_tot_mean = df_tot.mean(axis=1).to_frame()
-        df_tot_mean.columns = ['Encryption time mean (s)']
+            df_lambda = pd.concat(data, axis=1).iloc[:, -1]
+            df_lambda.columns = ['Encryption time lambda (s)']
 
-        aggr = pd.read_csv(path + "aggregator.csv", header=None)
-        aggr.columns = ['Sum time (s)']
+            aggr = pd.read_csv(path + "aggregator.csv", header=None)
+            aggr.columns = ['Sum time (s)']
 
-        main = pd.read_csv(path + "main.csv", header=None)
-        main.columns = ['Decryption time (s)']
+            main = pd.read_csv(path + "main.csv", header=None)
+            main.columns = ['Decryption time (s)']
 
-        iteration = pd.read_csv(path + "iteration_time.csv", header=None)
-        iteration.columns = ['Iteration time (s)']
+            iteration = pd.read_csv(path + "iteration_time.csv", header=None)
+            iteration.columns = ['Iteration time (s)']
 
-        mean = pd.concat([mean, df_agent_max, df_agent_min, df_agent_mean, df_tot_max, df_tot_min, df_tot_mean, aggr, main, iteration], axis=1)
+            mean = pd.concat([mean, df_agent_max, df_agent_min, df_agent_mean, df_lambda, aggr, main, iteration], axis=1)
 
-    with open('logs' + os.sep + "time.csv", 'w') as fd:
-        fd.write(first_line + '\n')
-    mean = mean.round(3)
-    mean.to_csv('logs' + os.sep + "time.csv", mode='a')
+        with open(path_file + "time.csv", 'w') as fd:
+            fd.write(first_line + '\n')
+        mean = mean.round(3)
+        mean.to_csv(path_file + "time.csv", mode='a')
