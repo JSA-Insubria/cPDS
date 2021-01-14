@@ -12,16 +12,14 @@ def get_graph(m, p):
 
     nx.draw(G, with_labels=True)
     plt.show()
-    save_img(plt, m, p)
-    return nx.adjacency_matrix(G)
 
-
-def save_img(plt, m, p):
     path = 'logs' + os.sep + 'graph'
     if not os.path.exists(path):
         os.makedirs(path)
 
     plt.savefig(path + os.sep + 'graph_' + str(m) + '_' + str(p) + '.png')
+
+    return nx.adjacency_matrix(G)
 
 
 def save_graph(m, L):
