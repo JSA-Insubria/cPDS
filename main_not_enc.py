@@ -11,45 +11,51 @@ import extra as extra
 import datetime
 
 
-def save_time(m, file, time_pre):
+gp_param = 0
+m = 0
+
+
+def save_time(file, time_pre):
     time_post = datetime.datetime.now()
-    util.writeIntoCSV(m, file, str((time_post - time_pre).total_seconds()))
+    util.writeIntoCSV(m, 'enc_' + str(gp_param), file, str((time_post - time_pre).total_seconds()))
 
 
-def aggregator_sum(m, lambdaa, S, L, x):
-    time_pre = datetime.datetime.now()
-    save_time(m, 'agent_' + str(m), time_pre)
+def aggregator_sum(L, S, lambdaa, x):
+    for i in range(L.shape[0]):
+        for j in range(L.shape[1]):
+            if (i != j) & (L[i][j] != 0):
+                x[i] = x[i] + x[j]
 
-    time_pre = datetime.datetime.now()
-    lambdaa_k_plus_1 = lambdaa + S @ L @ x
-    save_time(m, 'aggregator', time_pre)
-    return lambdaa_k_plus_1
+    return lambdaa + L @ S @ x
 
 
-def agent_encrypt(cPDSs, m, lambdaa, j):
+def agent_encrypt(cPDSs, lambdaa, j):
     x_tmp = cPDSs.compute(lambdaa)
-
     time_pre = datetime.datetime.now()
-    save_time(m, 'agent_' + str(j), time_pre)
+    save_time('agent_' + str(j), time_pre)
     return x_tmp
 
 
-def main_decrypt(m, lambdaa_encrypted):
+def main_decrypt(lambdaa_encrypted):
     time_pre = datetime.datetime.now()
     lambdaa = lambdaa_encrypted
-    save_time(m, 'main', time_pre)
+    save_time('main', time_pre)
     return lambdaa
 
 
-def main_iter_error(m, x_opt, xtrain, ytrain, x):
+def main_iter_error(x_opt,xtrain, ytrain, x):
     residuals_x = np.linalg.norm(x - (np.ones((m, 1)) * x_opt))
 
     error_x = (1 - plot.compute_error(xtrain, ytrain, x))
-    #error_x = (1 - extra.compute_error_extra(xtrain, ytrain, x))
+    #error_x = (1 - extra.compute_error_extra(xtrain, ytrain, x_dec))
     return residuals_x, error_x
 
 
-def __main__(m):
+def startcPDS(n_agent, graph_param):
+
+    global m, gp_param
+    m = n_agent
+    gp_param = graph_param
 
     #adj = graph_util.get_graph(m, 0.1)
     #L = np.eye(m) - util.local_degree(adj, 1)
@@ -81,34 +87,32 @@ def __main__(m):
         cPDSs.append(cPDS.cPDS(j, S[j], L_p[j], theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x[j]))
 
     lambdaa = S @ L @ x
-    total_time_pre = datetime.datetime.now()
 
     for i in range(max_iters):
         iteration_time_pre = datetime.datetime.now()
-        for j in range(m):
-            x[j] = agent_encrypt(cPDSs[j], m, lambdaa[j], j)
 
-        # sum lambdaa
-        lambdaa = aggregator_sum(m, lambdaa, S, L, x)
+        x = np.asarray([agent_encrypt(cPDSs[j], lambdaa[j], j) for j in range(m)])
 
-        # decrypt lambdaa
-        lambdaa = main_decrypt(m, lambdaa)
+        # sum x between nodes
+        lambdaa = aggregator_sum(L, S, lambdaa, x)
+
+        save_time('iteration_time', iteration_time_pre)
 
         # compute residual and error
-        #residuals_x[i], error_x[i] = main_iter_error(m, x_opt, xtrain, ytrain, x)
+        residuals_x[i], error_x[i] = main_iter_error(x_opt, xtrain, ytrain, x)
 
-        save_time(m, 'iteration_time', iteration_time_pre)
-
-    save_time(m, 'execution_time', total_time_pre)
-
-    plot.plot_error(error_x, max_iters)
-    plot.plot(residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
+    plot.plot_error('not', m, gp_param, error_x, max_iters)
+    plot.plot('not', m, gp_param, residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
     #extra.plot_extra(x, xtrain, xtest, ytrain, ytest)
 
 
-#m = [5, 10, 20, 30]
-m = [5, 10]
-for i in m:
-    __main__(i)
+if __name__ == "__main__":
+    #gp = [0.1, 0.5, 1]
+    gp = [0.1]
+    for j in gp:
+        #agents = [5, 10, 20, 30]
+        agents = [5]
+        for i in agents:
+            startcPDS(i, j)
 
-util.computeAgentsMean(m)
+        #util.computeAgentsMean(agents, j)

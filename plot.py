@@ -22,14 +22,20 @@ def compute_error(xtrain, ytrain, x):
     return np.abs(np.trapz(false_alarm, 1 - miss))
 
 
-def plot_error(error, max_iter):
+def plot_error(type, m, gp_param, error, max_iter):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=np.arange(max_iter)+1, y=error, mode='lines+markers', name='error'))
     fig.update_layout(title='Error', xaxis_title='Iter', yaxis_title='AUC')
     fig.show()
 
+    path = 'logs' + os.sep + 'graph' + os.sep + 'error'
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-def plot(m, gp_param, residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
+    fig.write_image(path + os.sep + 'e_' + type + '_' + str(m) + '_' + str(gp_param) + '.png', width=1920, height=1080)
+
+
+def plot(type, m, gp_param, residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM):
     # plot residuals
     plt.plot(residuals_x)
     plt.ylabel('Residuals x')
@@ -39,6 +45,12 @@ def plot(m, gp_param, residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SS
     plt.semilogy(residuals_x)
     plt.ylabel('Residuals x in logscale')
     plt.xlabel('Iterations')
+
+    path = 'logs' + os.sep + 'graph' + os.sep + 'residuals'
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    plt.savefig(path + os.sep + 'r_' + type + '_' + str(m) + '_' + str(gp_param) + '.png')
     plt.show()
 
     x_return = np.mean(x, axis=0)

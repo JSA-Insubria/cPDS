@@ -21,31 +21,32 @@ def save_time(file, time_pre):
     util.writeIntoCSV(m, 'enc_' + str(gp_param), file, str((time_post - time_pre).total_seconds()))
 
 
-def aggregator_sum(pk, lambdaa, S, L, encrypted_x):
-    time_pre = datetime.datetime.now()
-    lambdaa_encrypted_k = pk.encryptMatrix(lambdaa)
-    save_time('agent_' + str(m), time_pre)
+def aggregator_sum(L, S, lambdaa, x):
+    for i in range(L.shape[0]):
+        time_pre = datetime.datetime.now()
+        for j in range(L.shape[1]):
+            if (i != j) & (L[i][j] != 0):
+                x[i] = x[i] + x[j]
+        save_time('agent_sum_' + str(i), time_pre)
 
     time_pre = datetime.datetime.now()
-    # lambda = lambda + c * S2 * L2 * x;
-    lambdaa_encrypted_k_plus_1 = lambdaa_encrypted_k + S @ L @ encrypted_x
-    save_time('aggregator', time_pre)
-
-    return lambdaa_encrypted_k_plus_1
+    lambdaa = lambdaa + L @ S @ x
+    save_time('lambda_sum', time_pre)
+    return lambdaa
 
 
 def agent_encrypt(cPDSs, lambdaa, pk, j):
     x_tmp = cPDSs.compute(lambdaa)
     time_pre = datetime.datetime.now()
     x_enc = pk.encryptMatrix(x_tmp)
-    save_time('agent_' + str(j), time_pre)
+    save_time('agent_enc_' + str(j), time_pre)
     return x_enc
 
 
 def main_decrypt(msk, lambdaa_encrypted):
     time_pre = datetime.datetime.now()
     lambdaa = msk.decryptMatrix(lambdaa_encrypted)
-    save_time('main', time_pre)
+    save_time('decrypt', time_pre)
     return lambdaa
 
 
@@ -66,8 +67,6 @@ def startcPDS(n_agent, graph_param):
 
     adj = graph_util.get_graph(m, gp_param)
     L = np.eye(m) - util.local_degree(adj, 0.1)
-
-    #graph_util.save_graph(m, L)
 
     mpk, msk, pk_list, sk_list = paillier.generate_cPDS_keypair(m+1)
 
@@ -101,12 +100,11 @@ def startcPDS(n_agent, graph_param):
     for i in range(max_iters):
         iteration_time_pre = datetime.datetime.now()
 
+        # compute and encrypt x
         x = np.asarray([agent_encrypt(cPDSs[j], lambdaa[j], pk_list[j], j) for j in range(m)])
 
-        # sum lambdaa
-        lambdaa_encrypted = aggregator_sum(pk_list[-1], lambdaa, S, L, x)
-
-        # decrypt lambdaa
+        # sum and decrypt lambdaa
+        lambdaa_encrypted = aggregator_sum(L, S, lambdaa, x)
         lambdaa = main_decrypt(msk, lambdaa_encrypted)
 
         save_time('iteration_time', iteration_time_pre)
@@ -115,8 +113,8 @@ def startcPDS(n_agent, graph_param):
         residuals_x[i], error_x[i] = main_iter_error(msk, x_opt, xtrain, ytrain, x)
 
     x_dec = msk.decryptMatrix(x)
-    plot.plot_error(error_x, max_iters)
-    plot.plot(m, gp_param, residuals_x, x_dec, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
+    plot.plot_error('enc', m, gp_param, error_x, max_iters)
+    plot.plot('enc', m, gp_param, residuals_x, x_dec, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
     #extra.plot_extra(x_dec, xtrain, xtest, ytrain, ytest)
 
     not_enc.main_not_enc(m, graph_param, max_iters, w_SSVM, b_SSVM, x_opt, xtrain, ytrain, xtest, ytest, S, L, L_p,

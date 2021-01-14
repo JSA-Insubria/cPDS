@@ -101,33 +101,42 @@ def computeAgentsMean(m, graph_param):
         first_line = "iteration n°,"
         mean = pd.DataFrame()
         for i in m:
-            first_line = first_line + str(i) + " Agents,,,,,,,"
+            first_line = first_line + str(i) + " Agents,,,,,,,,"
             path = path_file + str(i) + "_agents" + os.sep
-            data = {}
-            for j in range(i+1):
-                data[j] = pd.read_csv(path + "agent_" + str(j) + ".csv", header=None)
+            data_enc = {}
+            data_sum = {}
+            for j in range(i):
+                data_enc[j] = pd.read_csv(path + "agent_enc_" + str(j) + ".csv", header=None)
+                data_sum[j] = pd.read_csv(path + "agent_sum_" + str(j) + ".csv", header=None)
 
-            df_agent = pd.concat(data, axis=1).iloc[:, :-1]
-            df_agent_max = df_agent.max(axis=1).to_frame()
-            df_agent_max.columns = ['Encryption time max - Agents (s)']
-            df_agent_min = df_agent.min(axis=1).to_frame()
-            df_agent_min.columns = ['Encryption time min - Agents (s)']
-            df_agent_mean = df_agent.mean(axis=1).to_frame()
-            df_agent_mean.columns = ['Encryption time mean - Agents (s)']
+            df_agent_enc = pd.concat(data_enc, axis=1)
+            df_agent_enc_max = df_agent_enc.max(axis=1).to_frame()
+            df_agent_enc_max.columns = ['Encryption time max - Agents (s)']
+            df_agent_enc_min = df_agent_enc.min(axis=1).to_frame()
+            df_agent_enc_min.columns = ['Encryption time min - Agents (s)']
+            df_agent_enc_mean = df_agent_enc.mean(axis=1).to_frame()
+            df_agent_enc_mean.columns = ['Encryption time mean - Agents (s)']
 
-            df_lambda = pd.concat(data, axis=1).iloc[:, -1]
-            df_lambda.columns = ['Encryption time lambda (s)']
+            df_agent_sum = pd.concat(data_sum, axis=1)
+            df_agent_sum_max = df_agent_sum.max(axis=1).to_frame()
+            df_agent_sum_max.columns = ['Sum time max - Agents (s)']
+            df_agent_sum_min = df_agent_sum.min(axis=1).to_frame()
+            df_agent_sum_min.columns = ['Sum time min - Agents (s)']
+            df_agent_sum_mean = df_agent_sum.mean(axis=1).to_frame()
+            df_agent_sum_mean.columns = ['Sum time mean - Agents (s)']
 
-            aggr = pd.read_csv(path + "aggregator.csv", header=None)
-            aggr.columns = ['Sum time (s)']
+            aggr = pd.read_csv(path + "lambda_sum.csv", header=None)
+            aggr.columns = ['Lambda sum time (s)']
 
-            main = pd.read_csv(path + "main.csv", header=None)
+            main = pd.read_csv(path + "decrypt.csv", header=None)
             main.columns = ['Decryption time (s)']
 
             iteration = pd.read_csv(path + "iteration_time.csv", header=None)
             iteration.columns = ['Iteration time (s)']
 
-            mean = pd.concat([mean, df_agent_max, df_agent_min, df_agent_mean, df_lambda, aggr, main, iteration], axis=1)
+            mean = pd.concat([mean, df_agent_enc_max, df_agent_enc_min, df_agent_enc_mean,
+                              df_agent_sum_max, df_agent_sum_min, df_agent_sum_mean,
+                              aggr, main, iteration], axis=1)
 
         with open(path_file + "time.csv", 'w') as fd:
             fd.write(first_line + '\n')

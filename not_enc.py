@@ -20,28 +20,32 @@ def save_time(file, time_pre):
     util.writeIntoCSV(m, 'not_' + str(gp_param), file, str((time_post - time_pre).total_seconds()))
 
 
-def aggregator_sum(lambdaa, S, L, x):
-    time_pre = datetime.datetime.now()
-    save_time('agent_' + str(m), time_pre)
+def aggregator_sum(L, S, lambdaa, x):
+    for i in range(L.shape[0]):
+        time_pre = datetime.datetime.now()
+        for j in range(L.shape[1]):
+            if (i != j) & (L[i][j] != 0):
+                x[i] = x[i] + x[j]
+        save_time('agent_sum_' + str(i), time_pre)
 
     time_pre = datetime.datetime.now()
-    lambdaa_k_plus_1 = lambdaa + S @ L @ x
-    save_time('aggregator', time_pre)
-    return lambdaa_k_plus_1
+    lambdaa = lambdaa + L @ S @ x
+    save_time('lambda_sum', time_pre)
+    return lambdaa
 
 
 def agent_encrypt(cPDSs, lambdaa, j):
     x_tmp = cPDSs.compute(lambdaa)
 
     time_pre = datetime.datetime.now()
-    save_time('agent_' + str(j), time_pre)
+    save_time('agent_enc_' + str(j), time_pre)
     return x_tmp
 
 
 def main_decrypt(lambdaa_encrypted):
     time_pre = datetime.datetime.now()
     lambdaa = lambdaa_encrypted
-    save_time('main', time_pre)
+    save_time('decrypt', time_pre)
     return lambdaa
 
 
@@ -73,17 +77,15 @@ def main_not_enc(n_agent, graph_param, max_iters,w_SSVM, b_SSVM, x_opt, xtrain, 
 
         x = np.asarray([agent_encrypt(cPDSs[j], lambdaa[j], j) for j in range(m)])
 
-        # sum lambdaa
-        lambdaa = aggregator_sum(lambdaa, S, L, x)
-
-        # decrypt lambdaa
-        lambdaa = main_decrypt(lambdaa)
+        # sum and decrypt lambdaa
+        lambdaa_encrypted = aggregator_sum(L, S, lambdaa, x)
+        lambdaa = main_decrypt(lambdaa_encrypted)
 
         save_time('iteration_time', iteration_time_pre)
 
         # compute residual and error
         residuals_x[i], error_x[i] = main_iter_error(x_opt, xtrain, ytrain, x)
 
-    plot.plot_error(error_x, max_iters)
-    plot.plot(m, gp_param, residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
+    plot.plot_error('not', m, gp_param, error_x, max_iters)
+    plot.plot('not', m, gp_param, residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
     # extra.plot_extra(x, xtrain, xtest, ytrain, ytest)
