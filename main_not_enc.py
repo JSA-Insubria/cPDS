@@ -17,29 +17,34 @@ m = 0
 
 def save_time(file, time_pre):
     time_post = datetime.datetime.now()
-    util.writeIntoCSV(m, 'enc_' + str(gp_param), file, str((time_post - time_pre).total_seconds()))
+    util.writeIntoCSV(m, 'not_' + str(gp_param), file, str((time_post - time_pre).total_seconds()))
 
 
 def aggregator_sum(L, S, lambdaa, x):
     for i in range(L.shape[0]):
+        time_pre = datetime.datetime.now()
         for j in range(L.shape[1]):
             if (i != j) & (L[i][j] != 0):
                 x[i] = x[i] + x[j]
+        save_time('agent_sum_' + str(i), time_pre)
 
-    return lambdaa + L @ S @ x
+    time_pre = datetime.datetime.now()
+    lambdaa = lambdaa + L @ S @ x
+    save_time('lambda_sum', time_pre)
+    return lambdaa
 
 
 def agent_encrypt(cPDSs, lambdaa, j):
     x_tmp = cPDSs.compute(lambdaa)
     time_pre = datetime.datetime.now()
-    save_time('agent_' + str(j), time_pre)
+    save_time('agent_enc_' + str(j), time_pre)
     return x_tmp
 
 
 def main_decrypt(lambdaa_encrypted):
     time_pre = datetime.datetime.now()
     lambdaa = lambdaa_encrypted
-    save_time('main', time_pre)
+    save_time('decrypt', time_pre)
     return lambdaa
 
 
