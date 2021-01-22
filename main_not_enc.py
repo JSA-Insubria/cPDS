@@ -20,18 +20,17 @@ def save_time(file, time_pre):
     util.writeIntoCSV(m, 'not_' + str(gp_param), file, str((time_post - time_pre).total_seconds()))
 
 
-def aggregator_sum(L, S, lambdaa, x):
+def aggregator_sum(L, S, lambdaa_k, x):
+    lambdaa_kplus1 = np.empty(shape=lambdaa_k.shape)
     for i in range(L.shape[0]):
         time_pre = datetime.datetime.now()
         for j in range(L.shape[1]):
-            if (i != j) & (L[i][j] != 0):
-                x[i] = x[i] + x[j]
+            if L[i][j] != 0:
+                v = L[j].reshape(-1, 1) * x[j]
+                lambdaa_kplus1[i] = lambdaa_k[i] + v[j]
         save_time('agent_sum_' + str(i), time_pre)
 
-    time_pre = datetime.datetime.now()
-    lambdaa = lambdaa + L @ S @ x
-    save_time('lambda_sum', time_pre)
-    return lambdaa
+    return lambdaa_k
 
 
 def agent_encrypt(cPDSs, lambdaa, j):
@@ -62,10 +61,10 @@ def startcPDS(n_agent, graph_param):
     m = n_agent
     gp_param = graph_param
 
-    #adj = graph_util.get_graph(m, 0.1)
-    #L = np.eye(m) - util.local_degree(adj, 1)
+    adj = graph_util.get_graph(m, gp_param)
+    L = np.eye(m) - util.local_degree(adj, 0.1)
 
-    L = graph_util.read_graph(m)
+    #L = graph_util.read_graph(m)
 
     # define parameters
     t = 5
@@ -116,7 +115,7 @@ if __name__ == "__main__":
     gp = [0.1]
     for j in gp:
         #agents = [5, 10, 20, 30]
-        agents = [5]
+        agents = [20]
         for i in agents:
             startcPDS(i, j)
 

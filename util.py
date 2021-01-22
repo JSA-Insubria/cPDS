@@ -101,7 +101,7 @@ def computeAgentsMean(m, graph_param):
         first_line = "iteration n°,"
         mean = pd.DataFrame()
         for i in m:
-            first_line = first_line + str(i) + " Agents,,,,,,,,"
+            first_line = first_line + str(i) + " Agents,,,,,,,,,"
             path = path_file + str(i) + "_agents" + os.sep
             data_enc = {}
             data_sum = {}
@@ -125,9 +125,6 @@ def computeAgentsMean(m, graph_param):
             df_agent_sum_mean = df_agent_sum.mean(axis=1).to_frame()
             df_agent_sum_mean.columns = ['Sum time mean - Agents (s)']
 
-            aggr = pd.read_csv(path + "lambda_sum.csv", header=None)
-            aggr.columns = ['Lambda sum time (s)']
-
             main = pd.read_csv(path + "decrypt.csv", header=None)
             main.columns = ['Decryption time (s)']
 
@@ -136,7 +133,7 @@ def computeAgentsMean(m, graph_param):
 
             mean = pd.concat([mean, df_agent_enc_max, df_agent_enc_min, df_agent_enc_mean,
                               df_agent_sum_max, df_agent_sum_min, df_agent_sum_mean,
-                              aggr, main, iteration], axis=1)
+                              main, iteration], axis=1)
 
         with open(path_file + "time.csv", 'w') as fd:
             fd.write(first_line + '\n')
