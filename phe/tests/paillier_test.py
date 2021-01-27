@@ -30,14 +30,15 @@ import random
 from functools import reduce
 
 from phe import paillier
+from phe import util
 
-DEFAULT_KEYSIZE = 3072
+DEFAULT_KEYSIZE = 2048
 
 class PaillierGeneric(unittest.TestCase):
 
-    def testBraghinKeysGenerator(self):
+    def test_cPDS_can_decrypt_after_sum(self):
         m = 4
-        msk, sk, public_key_list, private_key_list = paillier.generate_braghin_keypair(m)
+        mpk, sk, public_key_list, private_key_list = paillier.generate_cPDS_keypair(m)
 
         # Generate random msgs
         count = 0
@@ -51,9 +52,32 @@ class PaillierGeneric(unittest.TestCase):
         for i in range(m):
             cs[i] = public_key_list[i].encrypt(msgs[i])
 
+        m0 = private_key_list[0].decrypt(cs[0])
+        self.assertEqual(m0, msgs[0])
+
         tot = reduce(lambda x, y: x + y, cs)
         c = sk.decrypt(tot)
-        self.assertEqual(count, c)
+        self.assertEqual(round(count, 10), round(c, 10))
+
+    def test_cPDS_cant_decrypt_without_sum(self):
+        m = 4
+        mpk, sk, public_key_list, private_key_list = paillier.generate_cPDS_keypair(m)
+
+        # Generate random msgs
+        count = 0
+        msgs = [0] * m
+        for i in range(m):
+            msgs[i] = random.uniform(0.1, 999.9)
+            count += msgs[i]
+
+        # Encrypt msgs[i] with pk[i]
+        cs = [0] * m
+        for i in range(m):
+            cs[i] = public_key_list[i].encrypt(msgs[i])
+
+        t = 0
+        c = sk.decrypt(cs[t])
+        self.assertNotEqual(round(msgs[t], 10), round(c, 10))
 
 
     def testBraghinRandomNumberGenerator(self, n_length=DEFAULT_KEYSIZE):

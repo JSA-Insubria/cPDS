@@ -191,9 +191,10 @@ class EncodedNumber(object):
         int_rep = round(fractions.Fraction(scalar)
                         * fractions.Fraction(cls.BASE) ** -exponent)
 
-        if abs(int_rep) > public_key.max_int:
-            raise ValueError('Integer needs to be within +/- %d but got %d'
-                             % (public_key.max_int, int_rep))
+        if public_key.ri == 1:
+            if abs(int_rep) > public_key.max_int:
+                raise ValueError('Integer needs to be within +/- %d but got %d'
+                                 % (public_key.max_int, int_rep))
 
         # Wrap negative numbers by adding n
         return cls(public_key, int_rep % public_key.n, exponent)

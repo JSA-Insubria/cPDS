@@ -61,23 +61,24 @@ def generate_cPDS_keypair(m=4, n_length=DEFAULT_KEYSIZE):
         n_len = n.bit_length()
 
     # g in Z*n^2
-    g = powmod(random.SystemRandom().randrange(1, n), n, n*n)
+    #g = random.SystemRandom().randrange(1, n**2)
+    g = n + 1
+
+    mpk = PaillierPublicKey(n, g)
+    msk = PaillierPrivateKey(mpk, p, q)
 
     r = generate_random_value(n, m)
 
     public_key = [0] * m
     private_key = [0] * m
     for i in range(m):
-        public_key[i], private_key[i] = generate_key_pairs(n, powmod(g, r[i], n), p, q)
+        public_key[i], private_key[i] = generate_key_pairs(n, g, p, q, r[i])
 
-    msk = PaillierPublicKey(n, n+1)
-    sk = PaillierPrivateKey(msk, p, q)
-
-    return msk, sk, public_key, private_key
+    return mpk, msk, public_key, private_key
 
 
-def generate_key_pairs(n, g, p, q):
-    public_key = PaillierPublicKey(n, g)
+def generate_key_pairs(n, g, p, q, ri):
+    public_key = PaillierPublicKey(n, g, ri)
     private_key = PaillierPrivateKey(public_key, p, q)
     return public_key, private_key
 
@@ -85,9 +86,9 @@ def generate_key_pairs(n, g, p, q):
 def generate_random_value(n, m):
     r = [0] * m
     for i in range(m - 1):
-        r[i] = powmod(random.SystemRandom().randrange(1, n), n, n)
+        r[i] = random.SystemRandom().randrange(1, n)
 
-    r[m - 1] = sum(r) * -1
+    r[-1] = sum(r) * -1
     return r
 
 
@@ -141,12 +142,9 @@ class PaillierPublicKey(object):
         chance of detecting an integer overflow.
     """
 
-    def __init__(self, n, g=None):
-        if g == None:
-            self.g = n + 1
-        else:
-            self.g = g
-
+    def __init__(self, n, g=None, ri=None):
+        self.g = g or n + 1
+        self.ri = ri or 1
         self.n = n
         self.nsquare = n * n
         self.max_int = n // 3 - 1
@@ -208,7 +206,8 @@ class PaillierPublicKey(object):
             matrix_encoded = np.asarray([self.encrypt(matrix[i]) for i in range(matrix.shape[0])])
             return matrix_encoded
         else:
-            matrix_encoded = np.asarray([[self.encrypt(matrix[i][j]) for j in range(matrix.shape[1])] for i in range(matrix.shape[0])])
+            matrix_encoded = np.asarray(
+                [[self.encrypt(matrix[i][j]) for j in range(matrix.shape[1])] for i in range(matrix.shape[0])])
             return matrix_encoded
 
     def encrypt(self, value, precision=None, r_value=None):
@@ -258,6 +257,10 @@ class PaillierPublicKey(object):
         obfuscator = r_value or 1
         ciphertext = self.raw_encrypt(encoding.encoding, r_value=obfuscator)
         encrypted_number = EncryptedNumber(self, ciphertext, encoding.exponent)
+
+        if self.ri != 1:
+            encrypted_number = encrypted_number.__add__(self.ri)
+
         if r_value is None:
             encrypted_number.obfuscate()
         return encrypted_number
@@ -340,7 +343,8 @@ class PaillierPrivateKey(object):
             matrix_decoded = np.asarray([self.decrypt(matrix[i]) for i in range(matrix.shape[0])])
             return matrix_decoded
         else:
-            matrix_decoded = np.asarray([[self.decrypt(matrix[i][j]) for j in range(matrix.shape[1])] for i in range(matrix.shape[0])])
+            matrix_decoded = np.asarray(
+                [[self.decrypt(matrix[i][j]) for j in range(matrix.shape[1])] for i in range(matrix.shape[0])])
             return matrix_decoded
 
     def decrypt(self, encrypted_number):
@@ -365,6 +369,10 @@ class PaillierPrivateKey(object):
           ValueError: If *encrypted_number* was encrypted against a
             different key.
         """
+
+        if self.public_key.ri != 1:
+            encrypted_number = encrypted_number.__add__(-self.public_key.ri)
+
         encoded = self.decrypt_encoded(encrypted_number)
         return encoded.decode()
 
