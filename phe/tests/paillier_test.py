@@ -77,6 +77,7 @@ class PaillierGeneric(unittest.TestCase):
 
         t = 0
         c = sk.decrypt(cs[t])
+        print(msgs[t], ' - ', c)
         self.assertNotEqual(round(msgs[t], 10), round(c, 10))
 
 

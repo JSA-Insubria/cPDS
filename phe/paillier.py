@@ -83,7 +83,18 @@ def generate_key_pairs(n, g, p, q, ri):
     return public_key, private_key
 
 
-def generate_random_value(n, m):
+def generate_random_value(old_n, m):
+    n_length = 512
+    p = q = n = None
+    n_len = 0
+    while n_len != n_length:
+        p = getprimeover(n_length // 2)
+        q = p
+        while q == p:
+            q = getprimeover(n_length // 2)
+        n = p * q
+        n_len = n.bit_length()
+
     r = [0] * m
     for i in range(m - 1):
         r[i] = random.SystemRandom().randrange(1, n)
@@ -148,6 +159,13 @@ class PaillierPublicKey(object):
         self.n = n
         self.nsquare = n * n
         self.max_int = n // 3 - 1
+        self.enc_ri = 0
+
+        if self.ri != 1:
+            self.enc_ri = self.encrypt_ri(ri)
+
+    def encrypt_ri(self, ri):
+        return self.encrypt(ri)
 
     def __repr__(self):
         publicKeyHash = hex(hash(self))[2:]
@@ -258,7 +276,7 @@ class PaillierPublicKey(object):
         ciphertext = self.raw_encrypt(encoding.encoding, r_value=obfuscator)
         encrypted_number = EncryptedNumber(self, ciphertext, encoding.exponent)
 
-        if self.ri != 1:
+        if self.enc_ri != 0:
             encrypted_number = encrypted_number.__add__(self.ri)
 
         if r_value is None:

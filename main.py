@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 import phe.paillier as paillier
 
@@ -8,6 +9,7 @@ import cPDS as cPDS
 import plot as plot
 import extra as extra
 import not_enc as not_enc
+import key_gen_util as key_gen_util
 
 import datetime
 
@@ -21,39 +23,48 @@ def save_time(file, time_pre):
     util.writeIntoCSV(m, 'enc_' + str(gp_param), file, str((time_post - time_pre).total_seconds()))
 
 
-def aggregator_sum(L, S, lambdaa_k, x):
+def aggregator_sum(L, lambdaa_k, x):
     lambdaa_kplus1 = np.empty(shape=lambdaa_k.shape, dtype=object)
-    for i in range(L.shape[0]):
-        time_pre = datetime.datetime.now()
-        for j in range(L.shape[1]):
-            if L[i][j] != 0:
-                v = L[j].reshape(-1, 1) * x[j]
-                lambdaa_kplus1[i] = lambdaa_k[i] + v[j]
-        save_time('agent_sum_' + str(i), time_pre)
+    time_pre = datetime.datetime.now()
+    for j in range(len(L)):
+        if L[j] != 0:
+            v = L.reshape(-1, 1) * x[j]
+            lambdaa_kplus1 = lambdaa_k + v[j]
+    save_time('agent_sum_' + str(i), time_pre)
 
     return lambdaa_kplus1
 
 
-def agent_encrypt(cPDSs, lambdaa, pk, j):
-    x_tmp = cPDSs.compute(lambdaa)
+def agent_encrypt(keys_dict, L, x, node):
     time_pre = datetime.datetime.now()
-    x_enc = pk.encryptMatrix(x_tmp)
+
+    x_enc_node = np.empty(shape=x.shape, dtype=object)
+    key = 0
+    for other_node in range(len(L)):
+        if L[other_node] != 0:
+            if other_node != node:
+                x_enc_node[other_node] = keys_dict['pk_list' + str(node)][key].encryptMatrix(x[other_node])
+                key += 1
+            else:
+                x_enc_node[other_node] = keys_dict['pk_list' + str(node)][-1].encryptMatrix(x[other_node])
+
+
+    #x_enc_node = np.asarray(keys_dict['pk_list' + str(node)][other_node].encryptMatrix(x[other_node]) for other_node in range(m))
     save_time('agent_enc_' + str(j), time_pre)
-    return x_enc
+    return x_enc_node
 
 
-def main_decrypt(msk, lambdaa_encrypted):
+def main_decrypt(keys_dict, lambdaa_encrypted):
     time_pre = datetime.datetime.now()
-    lambdaa = msk.decryptMatrix(lambdaa_encrypted)
+    lambdaa = np.asarray([keys_dict['msk' + str(node)].decryptMatrix(lambdaa_encrypted[node]) for node in range(m)])
     save_time('decrypt', time_pre)
     return lambdaa
 
 
-def main_iter_error(msk, x_opt,xtrain, ytrain, x):
-    x_dec = msk.decryptMatrix(x)
-    residuals_x = np.linalg.norm(x_dec - (np.ones((m, 1)) * x_opt))
+def main_iter_error(x_opt, xtrain, ytrain, x):
+    residuals_x = np.linalg.norm(x - (np.ones((m, 1)) * x_opt))
 
-    error_x = (1 - plot.compute_error(xtrain, ytrain, x_dec))
+    error_x = (1 - plot.compute_error(xtrain, ytrain, x))
     #error_x = (1 - extra.compute_error_extra(xtrain, ytrain, x_dec))
     return residuals_x, error_x
 
@@ -67,7 +78,7 @@ def startcPDS(n_agent, graph_param):
     adj = graph_util.get_graph(m, gp_param)
     L = np.eye(m) - util.local_degree(adj, 0.1)
 
-    mpk, msk, pk_list, sk_list = paillier.generate_cPDS_keypair(m+1)
+    keys_dict = key_gen_util.gen_keys(L)
 
     # define parameters
     t = 5
@@ -99,21 +110,23 @@ def startcPDS(n_agent, graph_param):
     for i in range(max_iters):
         iteration_time_pre = datetime.datetime.now()
 
-        # compute and encrypt x
-        x = np.asarray([agent_encrypt(cPDSs[j], lambdaa[j], pk_list[j], j) for j in range(m)])
+        # compute x for all nodes
+        x = np.asarray([cPDSs[node].compute(lambdaa[node]) for node in range(m)])
 
-        # sum and decrypt lambdaa
-        lambdaa_encrypted = aggregator_sum(L, S, lambdaa, x)
-        lambdaa = main_decrypt(msk, lambdaa_encrypted)
+        # encrypt for node
+        lambdaa_kplus1 = np.empty(shape=lambdaa.shape, dtype=object)
+        for node in range(m):
+            x_enc = agent_encrypt(keys_dict, L[node], x, node)
+            lambdaa_kplus1[node] = aggregator_sum(L[node], lambdaa[node], x_enc)
 
+        lambdaa = main_decrypt(keys_dict, lambdaa_kplus1)
         save_time('iteration_time', iteration_time_pre)
 
         # compute residual and error
-        residuals_x[i], error_x[i] = main_iter_error(msk, x_opt, xtrain, ytrain, x)
+        residuals_x[i], error_x[i] = main_iter_error(x_opt, xtrain, ytrain, x)
 
-    x_dec = msk.decryptMatrix(x)
     plot.plot_error('enc', m, gp_param, error_x, max_iters)
-    plot.plot('enc', m, gp_param, residuals_x, x_dec, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
+    plot.plot('enc', m, gp_param, residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
     #extra.plot_extra(x_dec, xtrain, xtest, ytrain, ytest)
 
     not_enc.main_not_enc(m, graph_param, max_iters, w_SSVM, b_SSVM, x_opt, xtrain, ytrain, xtest, ytest, S, L, L_p,
@@ -121,9 +134,11 @@ def startcPDS(n_agent, graph_param):
 
 
 if __name__ == "__main__":
-    gp = [0.1, 0.5, 1]
+    #gp = [0.1, 0.5, 1]
+    gp = [1]
     for j in gp:
-        agents = [5, 10, 20, 30]
+        #agents = [5, 10, 20, 30]
+        agents = [10]
         for i in agents:
             startcPDS(i, j)
 
