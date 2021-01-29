@@ -277,7 +277,7 @@ class PaillierPublicKey(object):
         encrypted_number = EncryptedNumber(self, ciphertext, encoding.exponent)
 
         if self.enc_ri != 0:
-            encrypted_number = encrypted_number.__add__(self.ri)
+            encrypted_number = encrypted_number.__add__(self.enc_ri)
 
         if r_value is None:
             encrypted_number.obfuscate()
