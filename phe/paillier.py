@@ -161,6 +161,13 @@ class PaillierPublicKey(object):
         self.nsquare = n * n
         self.max_int = n // 3 - 1
 
+        self.enc_ri = 0
+        self.enc_ri_neg = 0
+
+        if self.ri != 1:
+            self.enc_ri = self.encrypt(self.ri)
+            self.enc_ri_neg = self.encrypt(-self.ri)
+
     def __repr__(self):
         publicKeyHash = hex(hash(self))[2:]
         return "<PaillierPublicKey {}>".format(publicKeyHash[:10])
@@ -270,8 +277,8 @@ class PaillierPublicKey(object):
         ciphertext = self.raw_encrypt(encoding.encoding, r_value=obfuscator)
         encrypted_number = EncryptedNumber(self, ciphertext, encoding.exponent)
 
-        if self.ri != 1:
-            encrypted_number = encrypted_number + self.ri
+        if (self.ri != 1) & (self.enc_ri != 0) & (self.enc_ri_neg != 0):
+            encrypted_number = encrypted_number.__add__(self.enc_ri)
 
         if r_value is None:
             encrypted_number.obfuscate()
@@ -415,8 +422,8 @@ class PaillierPrivateKey(object):
         if Encoding is None:
             Encoding = EncodedNumber
 
-        if self.public_key.ri != 1:
-            encrypted_number = encrypted_number - self.public_key.ri
+        if (self.public_key.ri != 1) & (self.public_key.enc_ri != 0) & (self.public_key.enc_ri_neg != 0):
+            encrypted_number = encrypted_number.__add__(self.public_key.enc_ri_neg)
 
         encoded = self.raw_decrypt(encrypted_number.ciphertext(be_secure=False))
         return Encoding(self.public_key, encoded,
@@ -604,13 +611,26 @@ class EncryptedNumber(object):
             encoding = other
         else:
             encoding = EncodedNumber.encode(self.public_key, other)
+        product = self._raw_mul(encoding.encoding)
+        exponent = self.exponent + encoding.exponent
 
-        if self.public_key.ri != 1:
-            a = self
-            a = a.__add__(-a.public_key.ri)
-            product = a._raw_mul(encoding.encoding)
-            exponent = a.exponent + encoding.exponent
-            sum_enc = EncryptedNumber(a.public_key, product, exponent).__add__(a.public_key.ri)
+        return EncryptedNumber(self.public_key, product, exponent)
+
+    def mul_enc(self, other):
+        """Multiply by an int, float, or EncodedNumber."""
+        if isinstance(other, EncryptedNumber):
+            raise NotImplementedError('Good luck with that...')
+
+        if isinstance(other, EncodedNumber):
+            encoding = other
+        else:
+            encoding = EncodedNumber.encode(self.public_key, other)
+
+        if (self.public_key.ri != 1) & (self.public_key.enc_ri != 0) & (self.public_key.enc_ri_neg != 0):
+            enc_msg = self.__add__(self.public_key.enc_ri_neg)
+            product = enc_msg._raw_mul(encoding.encoding)
+            exponent = enc_msg.exponent + encoding.exponent
+            sum_enc = EncryptedNumber(enc_msg.public_key, product, exponent).__add__(self.public_key.enc_ri)
             sum_enc.obfuscate()
             return sum_enc
 

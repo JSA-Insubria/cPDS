@@ -41,14 +41,14 @@ class PaillierGeneric(unittest.TestCase):
             m = 2
             mpk, sk, public_key_list, private_key_list = paillier.generate_cPDS_keypair(m)
 
-            a = public_key_list[0].encrypt(15.8)
-            #a = a * 0.2
+            '''a = public_key_list[0].encrypt(15.8)
+            a = a.mul_scalar(0.2)
             dec_a = private_key_list[0].decrypt(a)
             d = public_key_list[1].encrypt(15.2)
-            #d = d * 99.6
+            d = d.mul_scalar(99.6)
             dec_d = private_key_list[1].decrypt(d)
             sum = a + d
-            c_ad = sk.decrypt(sum)
+            c_ad = sk.decrypt(sum)'''
 
             # Generate random msgs
             msgs = [random.uniform(0.1, 99.9) for i in range(m)]
@@ -56,16 +56,15 @@ class PaillierGeneric(unittest.TestCase):
             # Encrypt msgs[i] with pk[i]
             cs = [public_key_list[i].encrypt(msgs[i]) for i in range(m)]
 
-            r = random.uniform(0.1, 1.0)
-            r2 = random.uniform(0.1, 1.0)
-            cs[0] = cs[0] * r
-            cs[1] = cs[1] * r2
-            #m0 = private_key_list[0].decrypt(cs[0])
-            #self.assertEqual(m0, msgs[0] * r)
+            #r = random.uniform(0.1, 99)
+            r = 0
+            cs[0] = cs[0].mul_enc(r)
+            m0 = private_key_list[0].decrypt(cs[0])
+            self.assertEqual(m0, msgs[0] * r)
 
             count = count - msgs[0] + msgs[0] * r
 
-            tot = cs[0] + cs[1]
+            tot = sum(cs)
             c = sk.decrypt(tot)
             self.assertEqual(round(count, 10), round(c, 10))
             print(round(count, 10), ' - ', round(c, 10))
