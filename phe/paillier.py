@@ -803,12 +803,6 @@ class EncryptedNumber(object):
             b = b.decrease_exponent_to(a.exponent)
 
         sum_ciphertext = a._raw_add(a.ciphertext(False), b.ciphertext(False))
-
-        if (a.public_key.ri != 1) & (b.public_key.ri != 1):
-            pk = copy.deepcopy(a.public_key)
-            pk.ri = a.public_key.ri + b.public_key.ri
-            return EncryptedNumber(pk, sum_ciphertext, a.exponent)
-
         return EncryptedNumber(a.public_key, sum_ciphertext, a.exponent)
 
     def _raw_add(self, e_a, e_b):
