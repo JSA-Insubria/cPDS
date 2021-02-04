@@ -20,6 +20,7 @@
 """Paillier encryption library for partially homomorphic encryption."""
 import random
 import numpy as np
+import copy
 
 try:
     from collections.abc import Mapping
@@ -159,13 +160,6 @@ class PaillierPublicKey(object):
         self.n = n
         self.nsquare = n * n
         self.max_int = n // 3 - 1
-        self.enc_ri = 0
-
-        if self.ri != 1:
-            self.enc_ri = self.encrypt_ri(ri)
-
-    def encrypt_ri(self, ri):
-        return self.encrypt(ri)
 
     def __repr__(self):
         publicKeyHash = hex(hash(self))[2:]
@@ -276,8 +270,8 @@ class PaillierPublicKey(object):
         ciphertext = self.raw_encrypt(encoding.encoding, r_value=obfuscator)
         encrypted_number = EncryptedNumber(self, ciphertext, encoding.exponent)
 
-        if self.enc_ri != 0:
-            encrypted_number = encrypted_number.__add__(self.enc_ri)
+        if self.ri != 1:
+            encrypted_number = encrypted_number + self.ri
 
         if r_value is None:
             encrypted_number.obfuscate()
@@ -387,10 +381,6 @@ class PaillierPrivateKey(object):
           ValueError: If *encrypted_number* was encrypted against a
             different key.
         """
-
-        if self.public_key.ri != 1:
-            encrypted_number = encrypted_number.__add__(-self.public_key.ri)
-
         encoded = self.decrypt_encoded(encrypted_number)
         return encoded.decode()
 
@@ -424,6 +414,9 @@ class PaillierPrivateKey(object):
 
         if Encoding is None:
             Encoding = EncodedNumber
+
+        if self.public_key.ri != 1:
+            encrypted_number = encrypted_number - self.public_key.ri
 
         encoded = self.raw_decrypt(encrypted_number.ciphertext(be_secure=False))
         return Encoding(self.public_key, encoded,
@@ -611,6 +604,16 @@ class EncryptedNumber(object):
             encoding = other
         else:
             encoding = EncodedNumber.encode(self.public_key, other)
+
+        if self.public_key.ri != 1:
+            a = self
+            a = a.__add__(-a.public_key.ri)
+            product = a._raw_mul(encoding.encoding)
+            exponent = a.exponent + encoding.exponent
+            sum_enc = EncryptedNumber(a.public_key, product, exponent).__add__(a.public_key.ri)
+            sum_enc.obfuscate()
+            return sum_enc
+
         product = self._raw_mul(encoding.encoding)
         exponent = self.exponent + encoding.exponent
 
@@ -800,6 +803,12 @@ class EncryptedNumber(object):
             b = b.decrease_exponent_to(a.exponent)
 
         sum_ciphertext = a._raw_add(a.ciphertext(False), b.ciphertext(False))
+
+        if (a.public_key.ri != 1) & (b.public_key.ri != 1):
+            pk = copy.deepcopy(a.public_key)
+            pk.ri = a.public_key.ri + b.public_key.ri
+            return EncryptedNumber(pk, sum_ciphertext, a.exponent)
+
         return EncryptedNumber(a.public_key, sum_ciphertext, a.exponent)
 
     def _raw_add(self, e_a, e_b):

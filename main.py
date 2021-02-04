@@ -27,44 +27,49 @@ def save_time_enc(file, time):
     util.writeIntoCSV(m, 'enc_' + str(gp_param), file, str(time))
 
 
-def aggregator_sum(node, L, lambdaa_k, x):
-    lambdaa_kplus1 = np.empty(shape=lambdaa_k.shape, dtype=object)
+def aggregator_sum(keys_dict, node, L, lambdaa_k, x):
+    #lambdaa_kplus1 = np.zeros(shape=lambdaa_k.shape, dtype=object)
     time_pre = datetime.datetime.now()
+    tmp_sum = np.zeros(shape=lambdaa_k.shape, dtype=object)
     for j in range(len(L)):
         if L[j] != 0:
             v = L.reshape(-1, 1) * x[j]
-            lambdaa_kplus1 = lambdaa_k + v[j]
+            tmp_sum += v[j]
+
+    lambdaa_kplus1 = lambdaa_k + tmp_sum
     save_time('agent_sum_' + str(node), time_pre)
 
     return lambdaa_kplus1
 
 
 def agent_encrypt(keys_dict, L, x, node, enc_time_nodes):
-    x_enc_node = np.empty(shape=x.shape, dtype=object)
+    x_enc_node = np.zeros(shape=x.shape, dtype=object)
     key = 0
     for other_node in range(len(L)):
         if L[other_node] != 0:
             if other_node != node:
                 time_pre = datetime.datetime.now()
                 x_enc_node[other_node] = keys_dict['pk_list' + str(node)][key].encryptMatrix(x[other_node])
+                #print(keys_dict['sk_list' + str(node)][key].decryptMatrix(x_enc_node[other_node]))
                 enc_time_nodes[other_node] += (datetime.datetime.now() - time_pre).total_seconds()
                 key += 1
             else:
                 time_pre = datetime.datetime.now()
                 x_enc_node[other_node] = keys_dict['pk_list' + str(node)][-1].encryptMatrix(x[other_node])
+                #print(keys_dict['sk_list' + str(node)][-1].decryptMatrix(x_enc_node[other_node]))
                 enc_time_nodes[other_node] += (datetime.datetime.now() - time_pre).total_seconds()
 
     return x_enc_node, enc_time_nodes
 
 
 def main_decrypt(keys_dict, lambdaa_encrypted):
-    lambdaa = np.empty(lambdaa_encrypted.shape)
+    tmp = np.zeros(lambdaa_encrypted.shape)
     for node in range(m):
         time_pre = datetime.datetime.now()
-        lambdaa[node] = keys_dict['msk' + str(node)].decryptMatrix(lambdaa_encrypted[node])
+        tmp[node] = keys_dict['msk' + str(node)].decryptMatrix(lambdaa_encrypted[node])
         save_time('agent_dec_' + str(node), time_pre)
 
-    return lambdaa
+    return tmp
 
 
 def main_iter_error(x_opt, xtrain, ytrain, x):
@@ -120,11 +125,11 @@ def startcPDS(n_agent, graph_param):
         x = np.asarray([cPDSs[node].compute(lambdaa[node]) for node in range(m)])
 
         # encrypt for node
-        lambdaa_kplus1 = np.empty(shape=lambdaa.shape, dtype=object)
+        lambdaa_kplus1 = np.zeros(shape=lambdaa.shape, dtype=object)
         enc_time_nodes = np.zeros(shape=m)
         for node in range(m):
             x_enc, enc_time_nodes = agent_encrypt(keys_dict, L[node], x, node, enc_time_nodes)
-            lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], x_enc)
+            lambdaa_kplus1[node] = aggregator_sum(keys_dict, node, L[node], lambdaa[node], x_enc)
 
         # save agent time
         [save_time_enc('agent_enc_' + str(node), enc_time_nodes[node]) for node in range(m)]
@@ -144,9 +149,11 @@ def startcPDS(n_agent, graph_param):
 
 
 if __name__ == "__main__":
-    gp = [0.1, 0.5, 1]
+    #gp = [0.1, 0.5, 1]
+    gp = [0.1]
     for j in gp:
-        agents = [5, 10, 20, 30]
+        #agents = [5, 10, 20, 30]
+        agents = [5]
         for i in agents:
             startcPDS(i, j)
 

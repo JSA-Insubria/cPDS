@@ -37,51 +37,55 @@ DEFAULT_KEYSIZE = 2048
 class PaillierGeneric(unittest.TestCase):
 
     def test_cPDS_can_decrypt_after_sum(self):
-        m = 4
-        mpk, sk, public_key_list, private_key_list = paillier.generate_cPDS_keypair(m)
+        for i in range(1, 100):
+            m = 2
+            mpk, sk, public_key_list, private_key_list = paillier.generate_cPDS_keypair(m)
 
-        # Generate random msgs
-        count = 0
-        msgs = [0] * m
-        for i in range(m):
-            msgs[i] = random.uniform(0.1, 99.9)
-            count += msgs[i]
+            a = public_key_list[0].encrypt(15.8)
+            #a = a * 0.2
+            dec_a = private_key_list[0].decrypt(a)
+            d = public_key_list[1].encrypt(15.2)
+            #d = d * 99.6
+            dec_d = private_key_list[1].decrypt(d)
+            sum = a + d
+            c_ad = sk.decrypt(sum)
 
-        # Encrypt msgs[i] with pk[i]
-        cs = [0] * m
-        for i in range(m):
-            cs[i] = public_key_list[i].encrypt(msgs[i])
+            # Generate random msgs
+            msgs = [random.uniform(0.1, 99.9) for i in range(m)]
+            count = sum(msgs)
+            # Encrypt msgs[i] with pk[i]
+            cs = [public_key_list[i].encrypt(msgs[i]) for i in range(m)]
 
-        m0 = private_key_list[0].decrypt(cs[0])
-        self.assertEqual(m0, msgs[0])
+            r = random.uniform(0.1, 1.0)
+            r2 = random.uniform(0.1, 1.0)
+            cs[0] = cs[0] * r
+            cs[1] = cs[1] * r2
+            #m0 = private_key_list[0].decrypt(cs[0])
+            #self.assertEqual(m0, msgs[0] * r)
 
-        tot = reduce(lambda x, y: x + y, cs)
-        c = sk.decrypt(tot)
-        self.assertEqual(round(count, 10), round(c, 10))
+            count = count - msgs[0] + msgs[0] * r
+
+            tot = cs[0] + cs[1]
+            c = sk.decrypt(tot)
+            self.assertEqual(round(count, 10), round(c, 10))
+            print(round(count, 10), ' - ', round(c, 10))
 
     def test_cPDS_cant_decrypt_without_sum(self):
-        m = 4
-        mpk, sk, public_key_list, private_key_list = paillier.generate_cPDS_keypair(m)
+        for i in range(1, 100):
+            m = 30
+            mpk, sk, public_key_list, private_key_list = paillier.generate_cPDS_keypair(m)
 
-        # Generate random msgs
-        count = 0
-        msgs = [0] * m
-        for i in range(m):
-            msgs[i] = random.uniform(0.1, 999.9)
-            count += msgs[i]
+            # Generate random msgs
+            msgs = [random.uniform(0.1, 99.9) for i in range(m)]
+            # Encrypt msgs[i] with pk[i]
+            cs = [public_key_list[i].encrypt(msgs[i]) for i in range(m)]
 
-        # Encrypt msgs[i] with pk[i]
-        cs = [0] * m
-        for i in range(m):
-            cs[i] = public_key_list[i].encrypt(msgs[i])
+            t = 0
+            c = sk.decrypt(cs[t])
+            self.assertNotEqual(round(msgs[t], 10), round(c, 10))
+            print(msgs[t], ' - ', c)
 
-        t = 0
-        c = sk.decrypt(cs[t])
-        print(msgs[t], ' - ', c)
-        self.assertNotEqual(round(msgs[t], 10), round(c, 10))
-
-
-    def testBraghinRandomNumberGenerator(self, n_length=DEFAULT_KEYSIZE):
+    def testcPDSRandomNumberGenerator(self, n_length=DEFAULT_KEYSIZE):
         p = q = n = None
         n_len = 0
         while n_len != n_length:
