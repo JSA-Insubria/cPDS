@@ -25,12 +25,15 @@ def save_time_enc(file, time):
 
 
 def aggregator_sum(node, L, lambdaa_k, x):
-    lambdaa_kplus1 = np.empty(shape=lambdaa_k.shape)
+    #lambdaa_kplus1 = np.zeros(shape=lambdaa_k.shape, dtype=object)
     time_pre = datetime.datetime.now()
+    tmp_sum = np.zeros(shape=lambdaa_k.shape)
     for j in range(len(L)):
         if L[j] != 0:
-            v = L.reshape(-1, 1) * x[j]
-            lambdaa_kplus1 = lambdaa_k + v[j]
+            v = np.asarray([[x_i * L_i for x_i in x[j]] for L_i in L])
+            tmp_sum += v[j]
+
+    lambdaa_kplus1 = lambdaa_k + tmp_sum
     save_time('agent_sum_' + str(node), time_pre)
 
     return lambdaa_kplus1
@@ -93,7 +96,7 @@ def main_not_enc(n_agent, graph_param, max_iters,w_SSVM, b_SSVM, x_opt, xtrain, 
         x = np.asarray([cPDSs[node].compute(lambdaa[node]) for node in range(m)])
 
         # encrypt for node
-        lambdaa_kplus1 = np.empty(shape=lambdaa.shape, dtype=object)
+        lambdaa_kplus1 = np.empty(shape=lambdaa.shape)
         enc_time_nodes = np.zeros(shape=m)
         for node in range(m):
             x_enc, enc_time_nodes = agent_encrypt(L[node], x, node, enc_time_nodes)

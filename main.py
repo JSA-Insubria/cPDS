@@ -33,7 +33,7 @@ def aggregator_sum(keys_dict, node, L, lambdaa_k, x):
     tmp_sum = np.zeros(shape=lambdaa_k.shape, dtype=object)
     for j in range(len(L)):
         if L[j] != 0:
-            v = L.reshape(-1, 1) * x[j]
+            v = np.asarray([[x_i.mul_enc(L_i) for x_i in x[j]] for L_i in L])
             tmp_sum += v[j]
 
     lambdaa_kplus1 = lambdaa_k + tmp_sum
@@ -50,26 +50,24 @@ def agent_encrypt(keys_dict, L, x, node, enc_time_nodes):
             if other_node != node:
                 time_pre = datetime.datetime.now()
                 x_enc_node[other_node] = keys_dict['pk_list' + str(node)][key].encryptMatrix(x[other_node])
-                #print(keys_dict['sk_list' + str(node)][key].decryptMatrix(x_enc_node[other_node]))
                 enc_time_nodes[other_node] += (datetime.datetime.now() - time_pre).total_seconds()
                 key += 1
             else:
                 time_pre = datetime.datetime.now()
                 x_enc_node[other_node] = keys_dict['pk_list' + str(node)][-1].encryptMatrix(x[other_node])
-                #print(keys_dict['sk_list' + str(node)][-1].decryptMatrix(x_enc_node[other_node]))
                 enc_time_nodes[other_node] += (datetime.datetime.now() - time_pre).total_seconds()
 
     return x_enc_node, enc_time_nodes
 
 
 def main_decrypt(keys_dict, lambdaa_encrypted):
-    tmp = np.zeros(lambdaa_encrypted.shape)
+    lambdaa = np.empty(lambdaa_encrypted.shape)
     for node in range(m):
         time_pre = datetime.datetime.now()
-        tmp[node] = keys_dict['msk' + str(node)].decryptMatrix(lambdaa_encrypted[node])
+        lambdaa[node] = keys_dict['msk' + str(node)].decryptMatrix(lambdaa_encrypted[node])
         save_time('agent_dec_' + str(node), time_pre)
 
-    return tmp
+    return lambdaa
 
 
 def main_iter_error(x_opt, xtrain, ytrain, x):
@@ -149,11 +147,10 @@ def startcPDS(n_agent, graph_param):
 
 
 if __name__ == "__main__":
-    #gp = [0.1, 0.5, 1]
-    gp = [0.1]
+    gp = [0.1, 0.5, 1]
     for j in gp:
         #agents = [5, 10, 20, 30]
-        agents = [5]
+        agents = [5, 10]
         for i in agents:
             startcPDS(i, j)
 
