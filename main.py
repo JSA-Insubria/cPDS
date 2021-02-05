@@ -1,7 +1,4 @@
 import numpy as np
-import sys
-
-import phe.paillier as paillier
 
 import util as util
 import graph_util as graph_util
@@ -10,6 +7,7 @@ import plot as plot
 import extra as extra
 import not_enc as not_enc
 import key_gen_util as key_gen_util
+import param_tuning
 
 import datetime
 
@@ -27,8 +25,7 @@ def save_time_enc(file, time):
     util.writeIntoCSV(m, 'enc_' + str(gp_param), file, str(time))
 
 
-def aggregator_sum(keys_dict, node, L, lambdaa_k, x):
-    #lambdaa_kplus1 = np.zeros(shape=lambdaa_k.shape, dtype=object)
+def aggregator_sum(node, L, lambdaa_k, x):
     time_pre = datetime.datetime.now()
     tmp_sum = np.zeros(shape=lambdaa_k.shape, dtype=object)
     for j in range(len(L)):
@@ -78,19 +75,13 @@ def main_iter_error(x_opt, xtrain, ytrain, x):
     return residuals_x, error_x
 
 
-def startcPDS(n_agent, graph_param):
+def startcPDS(n_agent, graph_param, L, t, tau, rho):
 
     global m, gp_param
     m = n_agent
     gp_param = graph_param
 
-    adj = graph_util.get_graph(m, gp_param)
-    L = np.eye(m) - util.local_degree(adj, 0.1)
-
     keys_dict = key_gen_util.gen_keys(L)
-
-    # define parameters
-    t = 5
 
     xtrain, ytrain, xtest, ytest = util.loadData()
     #xtrain, ytrain, xtest, ytest = extra.loadData_extra()
@@ -101,9 +92,7 @@ def startcPDS(n_agent, graph_param):
     x_init, y, q_kminus1, q = util.initcPDSVar(m, xtrain, gammas, n, data, labels)
 
     # define parameters
-    theta = t * np.eye(m) + np.diag(np.random.uniform(0, 1, m))  # size: m x m
-    S = np.eye(m)
-    L_p = L
+    theta = t + np.random.uniform(0, 1, m)
 
     max_iters = 100
     residuals_x = np.zeros(max_iters, dtype=np.double)
@@ -112,9 +101,9 @@ def startcPDS(n_agent, graph_param):
 
     cPDSs = []
     for j in range(m):
-        cPDSs.append(cPDS.cPDS(j, S[j], L_p[j], theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x_init[j]))
+        cPDSs.append(cPDS.cPDS(j, tau, rho, theta[j], gammas[j], data[j], labels[j], q[j], n[j], x_init[j]))
 
-    lambdaa = S @ L @ x_init
+    lambdaa = L @ x_init
 
     for i in range(max_iters):
         iteration_time_pre = datetime.datetime.now()
@@ -127,7 +116,7 @@ def startcPDS(n_agent, graph_param):
         enc_time_nodes = np.zeros(shape=m)
         for node in range(m):
             x_enc, enc_time_nodes = agent_encrypt(keys_dict, L[node], x, node, enc_time_nodes)
-            lambdaa_kplus1[node] = aggregator_sum(keys_dict, node, L[node], lambdaa[node], x_enc)
+            lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], x_enc)
 
         # save agent time
         [save_time_enc('agent_enc_' + str(node), enc_time_nodes[node]) for node in range(m)]
@@ -142,7 +131,7 @@ def startcPDS(n_agent, graph_param):
     plot.plot('enc', m, gp_param, residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
     #extra.plot_extra(x, xtrain, xtest, ytrain, ytest)
 
-    not_enc.main_not_enc(m, graph_param, max_iters, w_SSVM, b_SSVM, x_opt, xtrain, ytrain, xtest, ytest, S, L, L_p,
+    not_enc.main_not_enc(m, graph_param, max_iters, w_SSVM, b_SSVM, x_opt, xtrain, ytrain, xtest, ytest, L, tau, rho,
                          theta, gammas, data, labels, q, n, x_init)
 
 
@@ -152,6 +141,9 @@ if __name__ == "__main__":
         #agents = [5, 10, 20, 30]
         agents = [5, 10]
         for i in agents:
-            startcPDS(i, j)
+            adj = graph_util.get_graph(i, j)
+            L = np.eye(i) - util.local_degree(adj, 0.1)
+            t, tau, rho = param_tuning.tuning(i, L)
+            startcPDS(i, j, L, t, tau, rho)
 
         util.computeAgentsMean(agents, j)

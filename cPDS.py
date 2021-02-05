@@ -3,11 +3,9 @@ import pywt
 
 
 class cPDS:
-    def __init__(self, agent_id, S, L_p, theta, gammas, data, labels, q, n, x):
-        self.tau = 10
-        self.rho = 10
-        self.S = S
-        self.L_p = L_p  # L_p[j]
+    def __init__(self, agent_id, tau, rho, theta, gammas, data, labels, q, n, x):
+        self.tau = tau
+        self.rho = rho
         self.theta = theta  # theta[j] -> 1xm
         self.gammas = gammas  # gammas[j] -> 1x250
         self.data = data  # data[j] -> 250x5
@@ -31,15 +29,15 @@ class cPDS:
         # Beta_k+1_jt
         mu = (2 * self.rho) / (self.tau + self.theta)
         v1 = np.sum((self.gammas * self.labels * np.subtract(2 * self.q, self.q_kminus1)) @ self.data, axis=0)
-        v2 = self.L_p @ self.S * np.subtract(2 * lambda_d_k, lambda_d_kminus1)
+        v2 = np.subtract(2 * lambda_d_k, lambda_d_kminus1)
         v3 = - (self.theta * beta_k_j)
         u = -1 / (self.tau + self.theta) * (v1 + v2 + v3)
         beta_kplus1_jt = pywt.threshold(u, mu, 'soft')
 
         # Beta_k+1_j0
         v1_0 = np.sum(self.gammas * self.labels * np.subtract(2 * self.q, self.q_kminus1), axis=1)
-        v2_0 = self.L_p @ self.S * np.subtract(2 * lambda_dplus1_k, lamdba_dplus1_kminus1)
-        v3_0 = - self.theta * beta_k_j0
+        v2_0 = np.subtract(2 * lambda_dplus1_k, lamdba_dplus1_kminus1)
+        v3_0 = - (self.theta * beta_k_j0)
         beta_kplus1_j0 = - (v1_0 + v2_0 + v3_0) / self.theta
 
         self.x = np.concatenate([beta_kplus1_jt, beta_kplus1_j0])
@@ -70,11 +68,5 @@ class cPDS:
 
         self.q = q_kplus1_j
         self.lamda_kminus1 = lambdaa
-
-        #time_pre = datetime.datetime.now()
-        #x_enc = self.pk.encryptMatrix(self.x)
-        #time_post = datetime.datetime.now()
-        #util.writeIntoCSV(m, 'agent_' + str(self.agent_id), str((time_post - time_pre).total_seconds()))
-        #return x_enc
 
         return self.x

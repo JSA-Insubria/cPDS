@@ -75,7 +75,8 @@ def main_iter_error(x_opt, xtrain, ytrain, x):
     return residuals_x, error_x
 
 
-def main_not_enc(n_agent, graph_param, max_iters,w_SSVM, b_SSVM, x_opt, xtrain, ytrain, xtest, ytest, S, L, L_p, theta, gammas, data, labels, q, n, x):
+def main_not_enc(n_agent, graph_param, max_iters,w_SSVM, b_SSVM, x_opt, xtrain, ytrain, xtest, ytest, L, tau, rho,
+                 theta, gammas, data, labels, q, n, x):
 
     global m, gp_param
     m = n_agent
@@ -86,9 +87,9 @@ def main_not_enc(n_agent, graph_param, max_iters,w_SSVM, b_SSVM, x_opt, xtrain, 
 
     cPDSs = []
     for j in range(m):
-        cPDSs.append(cPDS.cPDS(j, S[j], L_p[j], theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x[j]))
+        cPDSs.append(cPDS.cPDS(j, tau, rho, theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x[j]))
 
-    lambdaa = S @ L @ x
+    lambdaa = L @ x
 
     for i in range(max_iters):
         iteration_time_pre = datetime.datetime.now()

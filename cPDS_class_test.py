@@ -1,18 +1,17 @@
 import numpy as np
 
-import phe.paillier as paillier
-
 import util as util
 import graph_util as graph_util
 import cPDS as cPDS
 import plot as plot
 import extra as extra
+import param_tuning
 
 import datetime
 
 
-gp_param = 0
 m = 0
+gp_param = 0
 
 
 def save_time(file, time_pre):
@@ -25,7 +24,6 @@ def save_time_enc(file, time):
 
 
 def aggregator_sum(node, L, lambdaa_k, x):
-    #lambdaa_kplus1 = np.zeros(shape=lambdaa_k.shape, dtype=object)
     time_pre = datetime.datetime.now()
     tmp_sum = np.zeros(shape=lambdaa_k.shape)
     for j in range(len(L)):
@@ -75,19 +73,11 @@ def main_iter_error(x_opt, xtrain, ytrain, x):
     return residuals_x, error_x
 
 
-def startcPDS(n_agent, graph_param):
+def startcPDS(n_agent, graph_param, L, t, tau, rho):
 
     global m, gp_param
     m = n_agent
     gp_param = graph_param
-
-    adj = graph_util.get_graph(m, gp_param)
-    L = np.eye(m) - util.local_degree(adj, 0.1)
-
-    #L = graph_util.read_graph(m)
-
-    # define parameters
-    t = 5
 
     xtrain, ytrain, xtest, ytest = util.loadData()
     #xtrain, ytrain, xtest, ytest = extra.loadData_extra()
@@ -98,9 +88,7 @@ def startcPDS(n_agent, graph_param):
     x, y, q_kminus1, q = util.initcPDSVar(m, xtrain, gammas, n, data, labels)
 
     # define parameters
-    theta = t * np.eye(m) + np.diag(np.random.uniform(0, 1, m))  # size: m x m
-    S = np.eye(m)
-    L_p = L
+    theta = t + np.random.uniform(0, 1, m)  # size: m x 1
 
     max_iters = 100
     residuals_x = np.zeros(max_iters, dtype=np.double)
@@ -108,9 +96,9 @@ def startcPDS(n_agent, graph_param):
 
     cPDSs = []
     for j in range(m):
-        cPDSs.append(cPDS.cPDS(j, S[j], L_p[j], theta[j][j], gammas[j], data[j], labels[j], q[j], n[j], x[j]))
+        cPDSs.append(cPDS.cPDS(j, tau, rho, theta[j], gammas[j], data[j], labels[j], q[j], n[j], x[j]))
 
-    lambdaa = S @ L @ x
+    lambdaa = L @ x
 
     for i in range(max_iters):
         iteration_time_pre = datetime.datetime.now()
@@ -139,12 +127,15 @@ def startcPDS(n_agent, graph_param):
 
 
 if __name__ == "__main__":
-    #gp = [0.1, 0.5, 1]
-    gp = [0.5]
+    gp = [0.1, 0.5, 1]
+    #gp = [0.5]
     for j in gp:
-        #agents = [5, 10, 20, 30]
-        agents = [10]
+        agents = [5, 10, 20, 30]
+        #agents = [10]
         for i in agents:
-            startcPDS(i, j)
+            adj = graph_util.get_graph(i, j)
+            L = np.eye(i) - util.local_degree(adj, 0.1)
+            t, tau, rho = param_tuning.tuning(i, L)
+            startcPDS(i, j, L, t, tau, rho)
 
         #util.computeAgentsMean(agents, j)
