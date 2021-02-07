@@ -11,7 +11,7 @@ def tuning(n_agent, L):
     taus = [0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10]
     rhos = [0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10]
 
-    max_iters = 100
+    max_iters = 2000
     xtrain, ytrain, xtest, ytest = util.loadData()
 
     auc = np.zeros(len(ts))

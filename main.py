@@ -138,7 +138,6 @@ def startcPDS(n_agent, graph_param, L, t, tau, rho):
 if __name__ == "__main__":
     gp = [0.1, 0.5, 1]
     for j in gp:
-        #agents = [5, 10, 20, 30]
         agents = [5, 10]
         for i in agents:
             adj = graph_util.get_graph(i, j)
