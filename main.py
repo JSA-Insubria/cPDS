@@ -25,13 +25,21 @@ def save_time_enc(file, time):
     util.writeIntoCSV(m, 'enc_' + str(gp_param), file, str(time))
 
 
+def compute_Lx(L, x):
+    res = np.zeros(shape=x.shape)
+    for i in range(len(L)):
+        if L[i] != 0:
+            res[i] = L[i] * x[i]
+
+    return res
+
+
 def aggregator_sum(node, L, lambdaa_k, x):
     time_pre = datetime.datetime.now()
     tmp_sum = np.zeros(shape=lambdaa_k.shape, dtype=object)
     for j in range(len(L)):
         if L[j] != 0:
-            v = np.asarray([[x_i.mul_enc(L_i) for x_i in x[j]] for L_i in L])
-            tmp_sum += v[j]
+            tmp_sum += x[j]
 
     lambdaa_kplus1 = lambdaa_k + tmp_sum
     save_time('agent_sum_' + str(node), time_pre)
@@ -115,7 +123,8 @@ def startcPDS(n_agent, graph_param, L, t, tau, rho):
         lambdaa_kplus1 = np.zeros(shape=lambdaa.shape, dtype=object)
         enc_time_nodes = np.zeros(shape=m)
         for node in range(m):
-            x_enc, enc_time_nodes = agent_encrypt(keys_dict, L[node], x, node, enc_time_nodes)
+            res = compute_Lx(L[node], x)
+            x_enc, enc_time_nodes = agent_encrypt(keys_dict, L[node], res, node, enc_time_nodes)
             lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], x_enc)
 
         # save agent time
