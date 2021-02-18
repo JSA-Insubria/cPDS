@@ -3,7 +3,7 @@ import pywt
 
 
 class cPDS:
-    def __init__(self, agent_id, tau, rho, theta, gammas, data, labels, q, n, x):
+    def __init__(self, agent_id, tau, rho, theta, gammas, data, labels, q, n, x, L=None):
         self.tau = tau
         self.rho = rho
         self.theta = theta  # theta[j] -> 1xm
@@ -16,6 +16,8 @@ class cPDS:
         self.lamda_kminus1 = np.zeros(len(x))  # # 1x6 init:0
         self.n = n
         self.agent_id = agent_id
+        self.L = L
+        self.old_x = x
 
     def compute(self, lambdaa):
         # x-Update
@@ -68,5 +70,8 @@ class cPDS:
 
         self.q = q_kplus1_j
         self.lamda_kminus1 = lambdaa
+
+        if np.count_nonzero(self.L) == 2:
+            self.x += self.old_x
 
         return self.x

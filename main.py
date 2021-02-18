@@ -109,7 +109,7 @@ def startcPDS(n_agent, graph_param, L, t, tau, rho):
 
     cPDSs = []
     for j in range(m):
-        cPDSs.append(cPDS.cPDS(j, tau, rho, theta[j], gammas[j], data[j], labels[j], q[j], n[j], x_init[j]))
+        cPDSs.append(cPDS.cPDS(j, tau, rho, theta[j], gammas[j], data[j], labels[j], q[j], n[j], x_init[j], L[j]))
 
     lambdaa = L @ x_init
 
@@ -147,7 +147,7 @@ def startcPDS(n_agent, graph_param, L, t, tau, rho):
 if __name__ == "__main__":
     gp = [0.1, 0.5, 1]
     for j in gp:
-        agents = [5, 10]
+        agents = [5, 10, 20, 30]
         for i in agents:
             adj = graph_util.get_graph(i, j)
             L = np.eye(i) - util.local_degree(adj, 0.1)
