@@ -4,6 +4,19 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 
+def local_degree(P, eps_deg):
+    n = P.shape[0]
+    W = np.zeros((n, n))
+    deg = P.sum(axis=1)
+    for i in range(0, n):
+        for j in range(0, n):
+            if P[i, j] == 1:
+                W[i, j] = 1.0/(max(deg[i], deg[j])+eps_deg)
+    W = np.diag(np.ones(n)-(W.sum(axis=1))) + W
+    W = (W+np.transpose(W)+2*np.eye(n, n))/4
+    return W
+
+
 def get_graph(m, p):
     nc = 0
     while nc != 1:
@@ -19,18 +32,6 @@ def get_graph(m, p):
     plt.savefig(path + os.sep + 'graph_' + str(m) + '_' + str(p) + '.png')
     plt.show()
 
-    return nx.adjacency_matrix(G)
+    adj = nx.adjacency_matrix(G)
+    return np.eye(m) - local_degree(adj, 0.1)
 
-
-def save_graph(m, L):
-    path = 'logs' + os.sep + 'graph'
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    np.savetxt(path + os.sep + 'graph_' + str(m) + '.txt', L, delimiter=",", fmt="%1.11f")
-
-
-def read_graph(m):
-    path = 'logs' + os.sep + 'graph'
-    L = np.loadtxt(path + os.sep + 'graph_' + str(m) + '.txt', delimiter=",")
-    return L

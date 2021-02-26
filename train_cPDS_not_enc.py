@@ -1,14 +1,8 @@
+import datetime
 import numpy as np
 
-import phe.paillier as paillier
-
-import util as util
-import graph_util as graph_util
-import cPDS as cPDS
-import plot as plot
-import extra as extra
-
-import datetime
+import load_save_data
+import cPDS
 
 
 gp_param = 0
@@ -17,11 +11,11 @@ m = 0
 
 def save_time(file, time_pre):
     time_post = datetime.datetime.now()
-    util.writeIntoCSV(m, 'not_' + str(gp_param), file, str((time_post - time_pre).total_seconds()))
+    load_save_data.writeIntoCSV(m, 'not_' + str(gp_param), file, str((time_post - time_pre).total_seconds()))
 
 
 def save_time_enc(file, time):
-    util.writeIntoCSV(m, 'not_' + str(gp_param), file, str(time))
+    load_save_data.writeIntoCSV(m, 'not_' + str(gp_param), file, str(time))
 
 
 def compute_Lx(L, x):
@@ -74,23 +68,11 @@ def main_decrypt(lambdaa_encrypted):
     return lambdaa
 
 
-def main_iter_error(x_opt, xtrain, ytrain, x):
-    residuals_x = np.linalg.norm(x - (np.ones((m, 1)) * x_opt))
-
-    error_x = (1 - plot.compute_error(xtrain, ytrain, x))
-    #error_x = (1 - extra.compute_error_extra(xtrain, ytrain, x))
-    return residuals_x, error_x
-
-
-def main_not_enc(n_agent, graph_param, max_iters,w_SSVM, b_SSVM, x_opt, xtrain, ytrain, xtest, ytest, L, tau, rho,
-                 theta, gammas, data, labels, q, n, x):
+def train_cPDS_not_enc(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, data, labels, x, q, theta):
 
     global m, gp_param
     m = n_agent
     gp_param = graph_param
-
-    residuals_x = np.zeros(max_iters, dtype=np.double)
-    error_x = np.zeros(max_iters, dtype=np.double)
 
     cPDSs = []
     for j in range(m):
@@ -117,9 +99,7 @@ def main_not_enc(n_agent, graph_param, max_iters,w_SSVM, b_SSVM, x_opt, xtrain, 
         lambdaa = main_decrypt(lambdaa_kplus1)
         save_time('iteration_time', iteration_time_pre)
 
-        # compute residual and error
-        residuals_x[i], error_x[i] = main_iter_error(x_opt, xtrain, ytrain, x)
-
-    plot.plot_error('not', m, gp_param, error_x, max_iters)
-    plot.plot('not', m, gp_param, residuals_x, x, xtrain, xtest, ytrain, ytest, w_SSVM, b_SSVM)
-    # extra.plot_extra(x, xtrain, xtest, ytrain, ytest)
+    x_return = np.mean(x, axis=0)
+    w_cPDS = x_return[:-1]
+    b_cPDS = x_return[-1]
+    return w_cPDS, b_cPDS

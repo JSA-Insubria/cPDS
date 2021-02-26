@@ -1,33 +1,5 @@
-import numpy as np
-import scipy.io as spio
 import os
-import pandas as pd
-
-
-def local_degree(P, eps_deg):
-    n = P.shape[0]
-    W = np.zeros((n, n))
-    deg = P.sum(axis=1)
-    for i in range(0, n):
-        for j in range(0, n):
-            if P[i, j] == 1:
-                W[i, j] = 1.0/(max(deg[i], deg[j])+eps_deg)
-    W = np.diag(np.ones(n)-(W.sum(axis=1))) + W
-    W = (W+np.transpose(W)+2*np.eye(n, n))/4
-    return W
-
-
-def loadData():
-    mat = spio.loadmat('data' + os.sep + 'dataset3.mat', squeeze_me=True)
-    xtrain = mat['xtrain']
-    ytrain = mat['ytrain']
-    xtest = mat['xtest']
-    ytest = mat['ytest']
-    # permute order of datapoints in training set to mix {+1}, {-1} examples
-    random_idx = np.random.rand(xtrain.shape[0]).argsort()
-    np.take(xtrain, random_idx, axis=0, out=xtrain)
-    np.take(ytrain, random_idx, axis=0, out=ytrain)
-    return xtrain, ytrain, xtest, ytest
+import numpy as np
 
 
 def getSplitIndices(m, xtrain):
@@ -40,10 +12,10 @@ def getSplitIndices(m, xtrain):
 
 
 def initFederatedDataVar(m):
-    n = np.zeros((m,), dtype=np.object)
-    gammas = np.zeros((m,), dtype=np.object)
-    data = np.zeros((m,), dtype=np.object)
-    labels = np.zeros((m,), dtype=np.object)
+    n = np.empty((m,), dtype=np.object)
+    gammas = np.empty((m,), dtype=np.object)
+    data = np.empty((m,), dtype=np.object)
+    labels = np.empty((m,), dtype=np.object)
     return n, gammas, data, labels
 
 
@@ -62,89 +34,31 @@ def federatedData(m, xtrain, ytrain):
 def initcPDSVar(m, xtrain, gammas, n, data, labels):
     x = np.random.normal(0, 1, (m, xtrain.shape[1] + 1))  # miu=0, sigma=1, size: m x p
     y = np.zeros((m,), dtype=np.object)
-    q_kminus1 = np.zeros((m,), dtype=np.object)
     q = np.zeros((m,), dtype=np.object)
     for j in range(m):
         y[j] = np.random.normal(0, 1, (1, n[j]))
-        q_kminus1[j] = np.zeros((1, n[j]))
         q[j] = gammas[j] * (np.einsum('ij,ij->i',
                                       np.concatenate([np.diag(labels[j]) @ data[j], labels[j].reshape(n[j], 1)],
                                                      axis=1),
                                       np.tile(x[j, :], (n[j], 1))) - y[j])
 
-    return x, y, q_kminus1, q
+    return x, q
 
 
-def loadDataCentralized():
-    # Load optimal solution computed by centralized approach
-    mat = spio.loadmat('data' + os.sep + 'sSVM_gurobi.mat', squeeze_me=True)
-    x_opt = mat['theta_opt_SSVM']
-    # x_opt = np.array([0.7738, 0.7131, 0.0000, 0.0433, -0.0112, 0.0462])
-    w_SSVM = x_opt[:-1]
-    b_SSVM = x_opt[-1]
-    return x_opt, w_SSVM, b_SSVM
+def compute_auc(w_param, b_param, xtest, ytest, classes):
+    pred_vals_cPDS = xtest @ w_param + b_param
+    thresholds = np.sort(pred_vals_cPDS, axis=0)
+    miss = np.zeros(thresholds.size)
+    false_alarm = np.zeros(thresholds.size)
+    for i_thr in range(thresholds.size):
+        ypred = (pred_vals_cPDS <= thresholds[i_thr]) + 0
+        ypred[ypred == 0] = classes[0]
+        miss[i_thr] = np.sum(np.logical_and(ypred == classes[0], ytest == classes[1])) / np.sum(ytest == classes[1])
+        false_alarm[i_thr] = np.sum(np.logical_and(ypred == classes[1], ytest == classes[0])) / np.sum(ytest == classes[0])
+
+    return np.abs(np.trapz(false_alarm, 1 - miss))
 
 
-def writeIntoCSV(m, folder_name, file_name, row):
-    path = 'logs' + os.sep + folder_name + os.sep + str(m) + '_agents'
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    with open(path + os.sep + file_name + '.csv', 'a') as fd:
-        fd.write(row + '\n')
-
-
-def computeAgentsMean(m, graph_param):
-    folder = ['enc_' + str(graph_param), 'not_' + str(graph_param)]
-    for file in folder:
-        path_file = 'logs' + os.sep + file + os.sep
-        first_line = "iteration n°,"
-        mean = pd.DataFrame()
-        for i in m:
-            first_line = first_line + str(i) + " Agents,,,,,,,,,,"
-            path = path_file + str(i) + "_agents" + os.sep
-            data_enc = {}
-            data_sum = {}
-            data_dec = {}
-            for j in range(i):
-                data_enc[j] = pd.read_csv(path + "agent_enc_" + str(j) + ".csv", header=None)
-                data_sum[j] = pd.read_csv(path + "agent_sum_" + str(j) + ".csv", header=None)
-                data_dec[j] = pd.read_csv(path + "agent_dec_" + str(j) + ".csv", header=None)
-
-            df_agent_enc = pd.concat(data_enc, axis=1)
-            df_agent_enc_max = df_agent_enc.max(axis=1).to_frame()
-            df_agent_enc_max.columns = ['Encryption time max - Agents (s)']
-            df_agent_enc_min = df_agent_enc.min(axis=1).to_frame()
-            df_agent_enc_min.columns = ['Encryption time min - Agents (s)']
-            df_agent_enc_mean = df_agent_enc.mean(axis=1).to_frame()
-            df_agent_enc_mean.columns = ['Encryption time mean - Agents (s)']
-
-            df_agent_sum = pd.concat(data_sum, axis=1)
-            df_agent_sum_max = df_agent_sum.max(axis=1).to_frame()
-            df_agent_sum_max.columns = ['Sum time max - Agents (s)']
-            df_agent_sum_min = df_agent_sum.min(axis=1).to_frame()
-            df_agent_sum_min.columns = ['Sum time min - Agents (s)']
-            df_agent_sum_mean = df_agent_sum.mean(axis=1).to_frame()
-            df_agent_sum_mean.columns = ['Sum time mean - Agents (s)']
-
-            df_agent_dec = pd.concat(data_dec, axis=1)
-            df_agent_dec_max = df_agent_dec.max(axis=1).to_frame()
-            df_agent_dec_max.columns = ['Decryption time max - Agents (s)']
-            df_agent_dec_min = df_agent_dec.min(axis=1).to_frame()
-            df_agent_dec_min.columns = ['Decryption time min - Agents (s)']
-            df_agent_dec_mean = df_agent_dec.mean(axis=1).to_frame()
-            df_agent_dec_mean.columns = ['Decryption time mean - Agents (s)']
-
-            iteration = pd.read_csv(path + "iteration_time.csv", header=None)
-            iteration.columns = ['Iteration time (s)']
-
-            mean = pd.concat([mean,
-                              df_agent_enc_max, df_agent_enc_min, df_agent_enc_mean,
-                              df_agent_sum_max, df_agent_sum_min, df_agent_sum_mean,
-                              df_agent_dec_max, df_agent_dec_min, df_agent_dec_mean,
-                              iteration], axis=1)
-
-        with open(path_file + "time.csv", 'w') as fd:
-            fd.write(first_line + '\n')
-        mean = mean.round(3)
-        mean.to_csv(path_file + "time.csv", mode='a')
+def save_auc(m, gp_param, auc_cPDS):
+    with open('logs' + os.sep + "auc.csv", 'a') as fd:
+        fd.write(str(m) + ',' + str(gp_param) + ',' + str(auc_cPDS) + '\n')

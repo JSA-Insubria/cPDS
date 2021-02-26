@@ -3,9 +3,10 @@ import pywt
 
 
 class cPDS:
-    def __init__(self, agent_id, tau, rho, theta, gammas, data, labels, q, n, x, L=None):
-        self.tau = tau
-        self.rho = rho
+    def __init__(self, agent_id, tau, rho, theta, gammas, data, labels, q, n, x, L):
+        m = len(L)
+        self.tau = tau/m
+        self.rho = rho/m
         self.theta = theta  # theta[j] -> 1xm
         self.gammas = gammas  # gammas[j] -> 1x250
         self.data = data  # data[j] -> 250x5
@@ -29,7 +30,7 @@ class cPDS:
         lamdba_dplus1_kminus1 = self.lamda_kminus1[-1]
 
         # Beta_k+1_jt
-        mu = (2 * self.rho) / (self.tau + self.theta)
+        mu = (self.rho) / (self.tau + self.theta)
         v1 = np.sum((self.gammas * self.labels * np.subtract(2 * self.q, self.q_kminus1)) @ self.data, axis=0)
         v2 = np.subtract(2 * lambda_d_k, lambda_d_kminus1)
         v3 = - (self.theta * beta_k_j)
@@ -39,7 +40,7 @@ class cPDS:
         # Beta_k+1_j0
         v1_0 = np.sum(self.gammas * self.labels * np.subtract(2 * self.q, self.q_kminus1), axis=1)
         v2_0 = np.subtract(2 * lambda_dplus1_k, lamdba_dplus1_kminus1)
-        v3_0 = - (self.theta * beta_k_j0)
+        v3_0 = - self.theta * beta_k_j0
         beta_kplus1_j0 = - (v1_0 + v2_0 + v3_0) / self.theta
 
         self.x = np.concatenate([beta_kplus1_jt, beta_kplus1_j0])
