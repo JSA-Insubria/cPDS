@@ -6,11 +6,12 @@ import graph_util
 import param_tuning
 import train_cPDS
 import train_cPDS_not_enc
+import matplotlib.pyplot as plt
 
 
 def load_data():
-    #xtrain, ytrain, xtest, ytest = load_save_data.loadData()
-    xtrain, ytrain, xtest, ytest = load_save_data.loadData_extra()
+    xtrain, ytrain, xtest, ytest = load_save_data.loadData()
+    #xtrain, ytrain, xtest, ytest = load_save_data.loadData_extra()
     x_opt, w_SSVM, b_SSVM = load_save_data.loadDataCentralized()
     classes = np.unique(ytrain)
     return xtrain, ytrain, xtest, ytest, classes, x_opt, w_SSVM, b_SSVM

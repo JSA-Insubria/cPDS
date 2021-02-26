@@ -66,6 +66,9 @@ def loadData_extra():
     ytrain = mat['ytrain']
     xtest = mat['xtest']
     ytest = mat['ytest']
+    random_idx = np.random.rand(xtrain.shape[0]).argsort()
+    np.take(xtrain, random_idx, axis=0, out=xtrain)
+    np.take(ytrain, random_idx, axis=0, out=ytrain)
     return xtrain, ytrain, xtest, ytest
 
 

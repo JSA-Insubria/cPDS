@@ -38,8 +38,7 @@ def initcPDSVar(m, xtrain, gammas, n, data, labels):
     for j in range(m):
         y[j] = np.random.normal(0, 1, (1, n[j]))
         q[j] = gammas[j] * (np.einsum('ij,ij->i',
-                                      np.concatenate([np.diag(labels[j]) @ data[j], labels[j].reshape(n[j], 1)],
-                                                     axis=1),
+                                      np.concatenate((np.diag(labels[j]) @ data[j], labels[j].reshape(n[j], 1)), axis=1),
                                       np.tile(x[j, :], (n[j], 1))) - y[j])
 
     return x, q
