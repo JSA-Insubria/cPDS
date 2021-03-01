@@ -39,38 +39,23 @@ def loadDataCentralized():
 def loadData_extra():
     dataset = pd.read_csv('data' + os.sep + 'framingham.csv')
     dataset.dropna(inplace=True)
+    dataset = dataset[
+        ['sysBP', 'glucose', 'age', 'totChol', 'cigsPerDay', 'diaBP', 'prevalentHyp', 'diabetes', 'BPMeds', 'male',
+         'TenYearCHD']]
 
-    dataset = dataset.drop(['education'], axis=1)
-    dataset = dataset.dropna()
-    dataset = dataset[['sysBP', 'glucose', 'age', 'totChol', 'cigsPerDay', 'diaBP', 'prevalentHyp', 'diabetes', 'BPMeds', 'male',
-             'TenYearCHD']]
-    dataset = dataset.drop(dataset[dataset.totChol > 599].index)
-
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    dataset = pd.DataFrame(scaler.fit_transform(dataset), columns=dataset.columns)
+    #scaler = MinMaxScaler(feature_range=(0, 1))
+    #dataset = pd.DataFrame(scaler.fit_transform(dataset), columns=dataset.columns)
 
     y = dataset['TenYearCHD']
     x = dataset.drop(['TenYearCHD'], axis=1)
 
-    #x = (x - np.min(x)) / (np.max(x) - np.min(x)).values
-    #scaler = MinMaxScaler()
-    #x = scaler.fit_transform(x, y)
+    pca = PCA(n_components=2)
+    x = pca.fit_transform(x)
 
-    #x = StandardScaler().fit_transform(x)
-    #x = PCA(n_components=2).fit_transform(x)
-
-    xtrain, xtest, ytrain, ytest = train_test_split(x, y)
+    xtrain, xtest, ytrain, ytest = train_test_split(x, y.to_numpy())
     #savemat('data/framingham.mat', {'xtrain': xtrain, 'xtest': xtest, 'ytrain': ytrain.reshape(-1, 1), 'ytest': ytest.reshape(-1, 1)})
 
-    shuffled_df = dataset.sample(frac=1, random_state=4)
-    CHD_df = shuffled_df.loc[shuffled_df['TenYearCHD'] == 1]
-    non_CHD_df = shuffled_df.loc[shuffled_df['TenYearCHD'] == 0].sample(n=611, random_state=42)
-    normalized_df = pd.concat([CHD_df, non_CHD_df])
-
-    ytrain = normalized_df['TenYearCHD']
-    xtrain = normalized_df.drop('TenYearCHD', axis=1)
-
-    return xtrain.to_numpy(), ytrain.to_numpy(), xtest.to_numpy(), ytest.to_numpy()
+    return xtrain, ytrain, xtest, ytest
 
 
 '''def loadData_extra():
