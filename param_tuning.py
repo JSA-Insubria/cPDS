@@ -6,7 +6,7 @@ import cPDS
 
 
 def tuning(n_agent, max_iters, L, data, labels, classes):
-    # return 5, 10, 10
+    #return 25, 10, 10
 
     ts = [1, 1, 1, 5, 5, 5, 10, 10, 10, 25, 25, 25]
     taus = [0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10]
@@ -48,7 +48,8 @@ def train(n_agent, max_iters, L, t, tau, rho, n, gammas, data, labels, x, q):
         # encrypt for node
         lambdaa_kplus1 = np.empty(shape=lambdaa.shape)
         for node in range(m):
-            lambdaa_kplus1[node] = aggregator_sum(L[node], lambdaa[node], x)
+            res = compute_Lx(L[node], x)
+            lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], res)
 
         lambdaa = lambdaa_kplus1
 
@@ -58,12 +59,20 @@ def train(n_agent, max_iters, L, t, tau, rho, n, gammas, data, labels, x, q):
     return w_cPDS, b_cPDS
 
 
-def aggregator_sum(L, lambdaa_k, x):
+def aggregator_sum(node, L, lambdaa_k, x):
     tmp_sum = np.zeros(shape=lambdaa_k.shape)
     for j in range(len(L)):
         if L[j] != 0:
-            v = np.asarray([[x_i * L_i for x_i in x[j]] for L_i in L])
-            tmp_sum += v[j]
+            tmp_sum += x[j]
 
     lambdaa_kplus1 = lambdaa_k + tmp_sum
     return lambdaa_kplus1
+
+
+def compute_Lx(L, x):
+    res = np.zeros(shape=x.shape)
+    for i in range(len(L)):
+        if L[i] != 0:
+            res[i] = L[i] * x[i]
+
+    return res

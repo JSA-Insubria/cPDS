@@ -36,31 +36,44 @@ def loadDataCentralized():
 
 
 # ------- load Framingham Heart study dataset -------
-'''def loadData_extra():
+def loadData_extra():
     dataset = pd.read_csv('data' + os.sep + 'framingham.csv')
     dataset.dropna(inplace=True)
-    #dataset = dataset[['age', 'male', 'cigsPerDay', 'totChol', 'sysBP', 'glucose', 'TenYearCHD']]
-    dataset.drop(['education', 'cigsPerDay', 'BPMeds', 'totChol', 'heartRate', 'glucose', 'BMI'], axis=1, inplace=True)
 
-    #scaler = MinMaxScaler(feature_range=(0, 1))
-    #dataset = pd.DataFrame(scaler.fit_transform(dataset), columns=dataset.columns)
+    dataset = dataset.drop(['education'], axis=1)
+    dataset = dataset.dropna()
+    dataset = dataset[['sysBP', 'glucose', 'age', 'totChol', 'cigsPerDay', 'diaBP', 'prevalentHyp', 'diabetes', 'BPMeds', 'male',
+             'TenYearCHD']]
+    dataset = dataset.drop(dataset[dataset.totChol > 599].index)
 
-    y = dataset.iloc[:, -1].to_numpy().astype(float)
-    x = dataset.iloc[:, :-1]
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    dataset = pd.DataFrame(scaler.fit_transform(dataset), columns=dataset.columns)
 
-    x = (x - np.min(x)) / (np.max(x) - np.min(x)).values
+    y = dataset['TenYearCHD']
+    x = dataset.drop(['TenYearCHD'], axis=1)
+
+    #x = (x - np.min(x)) / (np.max(x) - np.min(x)).values
     #scaler = MinMaxScaler()
     #x = scaler.fit_transform(x, y)
 
     #x = StandardScaler().fit_transform(x)
     #x = PCA(n_components=2).fit_transform(x)
 
-    xtrain, xtest, ytrain, ytest = train_test_split(x.to_numpy(), y)
+    xtrain, xtest, ytrain, ytest = train_test_split(x, y)
     #savemat('data/framingham.mat', {'xtrain': xtrain, 'xtest': xtest, 'ytrain': ytrain.reshape(-1, 1), 'ytest': ytest.reshape(-1, 1)})
-    return xtrain, ytrain, xtest, ytest'''
+
+    shuffled_df = dataset.sample(frac=1, random_state=4)
+    CHD_df = shuffled_df.loc[shuffled_df['TenYearCHD'] == 1]
+    non_CHD_df = shuffled_df.loc[shuffled_df['TenYearCHD'] == 0].sample(n=611, random_state=42)
+    normalized_df = pd.concat([CHD_df, non_CHD_df])
+
+    ytrain = normalized_df['TenYearCHD']
+    xtrain = normalized_df.drop('TenYearCHD', axis=1)
+
+    return xtrain.to_numpy(), ytrain.to_numpy(), xtest.to_numpy(), ytest.to_numpy()
 
 
-def loadData_extra():
+'''def loadData_extra():
     mat = loadmat('data' + os.sep + 'framingham.mat', squeeze_me=True)
     xtrain = mat['xtrain']
     ytrain = mat['ytrain']
@@ -69,7 +82,7 @@ def loadData_extra():
     random_idx = np.random.rand(xtrain.shape[0]).argsort()
     np.take(xtrain, random_idx, axis=0, out=xtrain)
     np.take(ytrain, random_idx, axis=0, out=ytrain)
-    return xtrain, ytrain, xtest, ytest
+    return xtrain, ytrain, xtest, ytest'''
 
 
 # ------- save logs -------

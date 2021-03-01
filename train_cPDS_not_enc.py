@@ -91,7 +91,7 @@ def train_cPDS_not_enc(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, 
         for node in range(m):
             res = compute_Lx(L[node], x)
             x_enc, enc_time_nodes = agent_encrypt(L[node], res, node, enc_time_nodes)
-            lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], x_enc)
+            lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], res)
 
         # save agent time
         [save_time_enc('agent_enc_' + str(node), enc_time_nodes[node]) for node in range(m)]

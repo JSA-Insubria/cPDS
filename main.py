@@ -29,10 +29,10 @@ def compute_auc(w_cPDS, b_cPDS, xtest, ytest, classes):
 
 if __name__ == "__main__":
     xtrain, ytrain, xtest, ytest, classes, x_opt, w_SSVM, b_SSVM = load_data()
-    max_iters = 100
+    max_iters = 1000
 
     #gp = [0.1, 0.5, 1]
-    gp = [0.5]
+    gp = [0.2]
     for j in gp:
         #agents = [5, 10, 20, 30]
         agents = [10]
@@ -41,7 +41,7 @@ if __name__ == "__main__":
             n, gammas, data, labels, x_init, q = load_cPDS_parameters(i)
 
             # run parameters tuning
-            t, tau, rho = param_tuning.tuning(i, max_iters, L, xtrain, ytrain, classes)
+            t, tau, rho = param_tuning.tuning(i, 2000, L, xtrain, ytrain, classes)
             theta = t + np.random.uniform(0, 1, i)
 
             # run cPDS with encryption
@@ -59,5 +59,3 @@ if __name__ == "__main__":
             util.save_auc(i, j, auc)
 
         load_save_data.compute_time_csv(agents, j)
-
-
