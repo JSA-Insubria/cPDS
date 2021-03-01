@@ -52,13 +52,13 @@ def loadData_extra():
     pca = PCA(n_components=2)
     x = pca.fit_transform(x)
 
-    xtrain, xtest, ytrain, ytest = train_test_split(x, y.to_numpy())
-    #savemat('data/framingham.mat', {'xtrain': xtrain, 'xtest': xtest, 'ytrain': ytrain.reshape(-1, 1), 'ytest': ytest.reshape(-1, 1)})
+    xtrain, xtest, ytrain, ytest = train_test_split(x, y.to_numpy().astype(float))
+    savemat('data/framingham.mat', {'xtrain': xtrain, 'xtest': xtest, 'ytrain': ytrain.reshape(-1, 1), 'ytest': ytest.reshape(-1, 1)})
 
     return xtrain, ytrain, xtest, ytest
 
 
-'''def loadData_extra():
+def loadData_extra_mat():
     mat = loadmat('data' + os.sep + 'framingham.mat', squeeze_me=True)
     xtrain = mat['xtrain']
     ytrain = mat['ytrain']
@@ -67,7 +67,7 @@ def loadData_extra():
     random_idx = np.random.rand(xtrain.shape[0]).argsort()
     np.take(xtrain, random_idx, axis=0, out=xtrain)
     np.take(ytrain, random_idx, axis=0, out=ytrain)
-    return xtrain, ytrain, xtest, ytest'''
+    return xtrain, ytrain, xtest, ytest
 
 
 # ------- save logs -------
