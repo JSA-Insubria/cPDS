@@ -2,13 +2,18 @@ import os
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, roc_curve, auc, f1_score
+from sklearn.metrics import mean_squared_error, roc_curve, auc, f1_score, roc_auc_score, accuracy_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import plotly.graph_objects as go
+import plotly.express as px
+
+from sklearn.utils import resample
 
 from scipy.io import savemat, loadmat
+
+from sklearn.svm import SVC
 
 
 # ------- load dataset3 -------
@@ -39,23 +44,60 @@ def loadDataCentralized():
 def loadData_extra():
     dataset = pd.read_csv('data' + os.sep + 'framingham.csv')
     dataset.dropna(inplace=True)
-    dataset = dataset[
-        ['sysBP', 'glucose', 'age', 'totChol', 'cigsPerDay', 'diaBP', 'prevalentHyp', 'diabetes', 'BPMeds', 'male',
-         'TenYearCHD']]
 
-    #scaler = MinMaxScaler(feature_range=(0, 1))
-    #dataset = pd.DataFrame(scaler.fit_transform(dataset), columns=dataset.columns)
+    #dataset = dataset[['sysBP', 'glucose', 'age', 'cigsPerDay', 'totChol', 'diaBP', 'prevalentHyp', 'male',
+    #                   'BPMeds', 'diabetes', 'TenYearCHD']]
+
+    dataset.drop(['education', 'currentSmoker', 'BMI', 'heartRate'], axis=1)
 
     y = dataset['TenYearCHD']
     x = dataset.drop(['TenYearCHD'], axis=1)
 
-    pca = PCA(n_components=2)
-    x = pca.fit_transform(x)
+    #scaler = StandardScaler()
+    #x = scaler.fit_transform(x)
+    #pca = PCA(n_components=2)
+    #x = pca.fit_transform(x)
 
-    xtrain, xtest, ytrain, ytest = train_test_split(x, y.to_numpy().astype(float))
-    savemat('data/framingham.mat', {'xtrain': xtrain, 'xtest': xtest, 'ytrain': ytrain.reshape(-1, 1), 'ytest': ytest.reshape(-1, 1)})
+    xtrain, xtest, ytrain, ytest = train_test_split(x.to_numpy(), y.to_numpy().astype(float), test_size=0.2, random_state=0)
+
+    #savemat('data/heart.mat',
+    #        {'xtrain': xtrain, 'xtest': xtest, 'ytrain': ytrain.reshape(-1, 1), 'ytest': ytest.reshape(-1, 1)})
+
+    plot_pca(xtrain, ytrain, xtest, ytest)
+    test_svc(xtrain, ytrain, xtest, ytest)
 
     return xtrain, ytrain, xtest, ytest
+
+
+def test_svc(xtrain, ytrain, xtest, ytest):
+    svm_clf = SVC(kernel='linear', probability=True)
+
+    svm_clf.fit(xtrain, ytrain)
+
+    svm_predict = svm_clf.predict(xtest)
+    svm_accuracy = accuracy_score(ytest, svm_predict)
+    print(svm_accuracy)
+
+    ypred = svm_clf.predict_proba(xtest)
+    print(roc_auc_score(ytest, ypred[:, 1]))
+
+
+def plot_pca(xtrain, ytrain, xtest, ytest):
+    classes = np.unique(ytrain)
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(x=xtrain[ytrain == classes[0], 0], y=xtrain[ytrain == classes[0], 1], mode='markers',
+                   name='training class 0'))
+    fig.add_trace(
+        go.Scatter(x=xtrain[ytrain == classes[1], 0], y=xtrain[ytrain == classes[1], 1], mode='markers',
+                   name='training class 1'))
+    fig.add_trace(go.Scatter(x=xtest[ytest == classes[0], 0], y=xtest[ytest == classes[0], 1], mode='markers',
+                             name='test class 0'))
+    fig.add_trace(go.Scatter(x=xtest[ytest == classes[1], 0], y=xtest[ytest == classes[1], 1], mode='markers',
+                             name='test class 1'))
+    fig.update_layout(title='AUC')
+    fig.show()
 
 
 def loadData_extra_mat():

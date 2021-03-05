@@ -3,16 +3,17 @@ from sklearn.model_selection import train_test_split
 
 import util
 import cPDS
+import train_cPDS_not_enc
 
 
-def tuning(n_agent, max_iters, L, data, labels, classes):
-    #return 25, 10, 10
+def tuning(n_agent, max_iters, L, data_train, labels, classes):
+    return 25, 0.1, 0.1
 
     ts = [1, 1, 1, 5, 5, 5, 10, 10, 10, 25, 25, 25]
     taus = [0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10]
     rhos = [0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10]
 
-    xtrain, xtest, ytrain, ytest = train_test_split(data, labels)
+    xtrain, xtest, ytrain, ytest = train_test_split(data_train, labels)
     n, gammas, data, labels = util.federatedData(n_agent, xtrain, ytrain)
     x_init, q = util.initcPDSVar(n_agent, xtrain, gammas, n, data, labels)
 
@@ -22,7 +23,10 @@ def tuning(n_agent, max_iters, L, data, labels, classes):
         tau = taus[param_idx]
         rho = rhos[param_idx]
 
-        w_cPDS, b_cPDS = train(n_agent, max_iters, L, t, tau, rho, n, gammas, data, labels, x_init, q)
+        theta = t + np.random.uniform(0, 1, n_agent)
+
+        #w_cPDS, b_cPDS = train(n_agent, max_iters, L, t, tau, rho, n, gammas, data, labels, x_init, q)
+        w_cPDS, b_cPDS = train_cPDS_not_enc.train_cPDS_not_enc(n_agent, 0.2, max_iters, L, tau, rho, n, gammas, data, labels, x_init, q, theta)
         auc[param_idx] = util.compute_auc(w_cPDS, b_cPDS, xtest, ytest, classes)
         print('AUC: ', auc[param_idx], ', t: ', ts[param_idx], ', tau: ', taus[param_idx], ', rho: ', rhos[param_idx])
 
