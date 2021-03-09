@@ -79,11 +79,16 @@ def train_cPDS_not_enc(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, 
         cPDSs.append(cPDS.cPDS(j, tau, rho, theta[j], gammas[j], data[j], labels[j], q[j], n[j], x[j], L[j]))
 
     lambdaa = L @ x
+    best_features = np.zeros(len(x[1]), dtype=int)
 
     for i in range(max_iters):
         iteration_time_pre = datetime.datetime.now()
 
         x = np.asarray([cPDSs[node].compute(lambdaa[node]) for node in range(m)])
+
+        #print('x = ', x)
+        for node in range(m):
+            best_features[np.argmax(x[node][:-1])] += 1
 
         # encrypt for node
         lambdaa_kplus1 = np.empty(shape=lambdaa.shape)
@@ -98,6 +103,8 @@ def train_cPDS_not_enc(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, 
 
         lambdaa = main_decrypt(lambdaa_kplus1)
         save_time('iteration_time', iteration_time_pre)
+
+    print(best_features)
 
     x_return = np.mean(x, axis=0)
     w_cPDS = x_return[:-1]

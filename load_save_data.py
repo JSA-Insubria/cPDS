@@ -2,17 +2,15 @@ import os
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, roc_curve, auc, f1_score, roc_auc_score, accuracy_score
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import  roc_curve, auc
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import plotly.graph_objects as go
 import plotly.express as px
 
-from sklearn.utils import resample
+from scipy.stats import zscore
 
 from scipy.io import savemat, loadmat
-
 from sklearn.svm import SVC
 
 
@@ -27,6 +25,7 @@ def loadData():
     random_idx = np.random.rand(xtrain.shape[0]).argsort()
     np.take(xtrain, random_idx, axis=0, out=xtrain)
     np.take(ytrain, random_idx, axis=0, out=ytrain)
+    test_svc(xtrain, ytrain, xtest, ytest)
     return xtrain, ytrain, xtest, ytest
 
 
@@ -45,41 +44,32 @@ def loadData_extra():
     dataset = pd.read_csv('data' + os.sep + 'framingham.csv')
     dataset.dropna(inplace=True)
 
-    #dataset = dataset[['sysBP', 'glucose', 'age', 'cigsPerDay', 'totChol', 'diaBP', 'prevalentHyp', 'male',
-    #                   'BPMeds', 'diabetes', 'TenYearCHD']]
-
-    dataset.drop(['education', 'currentSmoker', 'BMI', 'heartRate'], axis=1)
+    for i in range(10):
+        dataset.insert(loc=i, column='dummy' + str(i), value=np.random.normal(0, 1, len(dataset)))
 
     y = dataset['TenYearCHD']
     x = dataset.drop(['TenYearCHD'], axis=1)
 
-    #scaler = StandardScaler()
-    #x = scaler.fit_transform(x)
-    #pca = PCA(n_components=2)
-    #x = pca.fit_transform(x)
+    x = zscore(x, ddof=1)
 
-    xtrain, xtest, ytrain, ytest = train_test_split(x.to_numpy(), y.to_numpy().astype(float), test_size=0.2, random_state=0)
+    xtrain, xtest, ytrain, ytest = train_test_split(x, y.to_numpy().astype(float))
 
-    #savemat('data/heart.mat',
-    #        {'xtrain': xtrain, 'xtest': xtest, 'ytrain': ytrain.reshape(-1, 1), 'ytest': ytest.reshape(-1, 1)})
+    savemat('data/framingham.mat', {'xtrain': xtrain, 'xtest': xtest, 'ytrain': ytrain.reshape(-1, 1), 'ytest': ytest.reshape(-1, 1)})
 
-    plot_pca(xtrain, ytrain, xtest, ytest)
-    test_svc(xtrain, ytrain, xtest, ytest)
+    #plot_pca(xtrain, ytrain, xtest, ytest)
+    #test_svc(xtrain, ytrain, xtest, ytest)
 
     return xtrain, ytrain, xtest, ytest
 
 
 def test_svc(xtrain, ytrain, xtest, ytest):
-    svm_clf = SVC(kernel='linear', probability=True)
+    svm_clf = SVC(kernel='rbf', probability=True)
 
     svm_clf.fit(xtrain, ytrain)
 
     svm_predict = svm_clf.predict(xtest)
-    svm_accuracy = accuracy_score(ytest, svm_predict)
-    print(svm_accuracy)
-
-    ypred = svm_clf.predict_proba(xtest)
-    print(roc_auc_score(ytest, ypred[:, 1]))
+    fpr, tpr, thresholds = roc_curve(ytest, svm_predict, pos_label=1)
+    print('SVM AUC: ', auc(fpr, tpr))
 
 
 def plot_pca(xtrain, ytrain, xtest, ytest):
@@ -87,16 +77,16 @@ def plot_pca(xtrain, ytrain, xtest, ytest):
 
     fig = go.Figure()
     fig.add_trace(
-        go.Scatter(x=xtrain[ytrain == classes[0], 0], y=xtrain[ytrain == classes[0], 1], mode='markers',
+        go.Scatter(x=xtrain[ytrain == classes[0], 9], y=xtrain[ytrain == classes[0], 14], mode='markers',
                    name='training class 0'))
     fig.add_trace(
-        go.Scatter(x=xtrain[ytrain == classes[1], 0], y=xtrain[ytrain == classes[1], 1], mode='markers',
+        go.Scatter(x=xtrain[ytrain == classes[1], 9], y=xtrain[ytrain == classes[1], 14], mode='markers',
                    name='training class 1'))
-    fig.add_trace(go.Scatter(x=xtest[ytest == classes[0], 0], y=xtest[ytest == classes[0], 1], mode='markers',
+    fig.add_trace(go.Scatter(x=xtest[ytest == classes[0], 9], y=xtest[ytest == classes[0], 14], mode='markers',
                              name='test class 0'))
-    fig.add_trace(go.Scatter(x=xtest[ytest == classes[1], 0], y=xtest[ytest == classes[1], 1], mode='markers',
+    fig.add_trace(go.Scatter(x=xtest[ytest == classes[1], 9], y=xtest[ytest == classes[1], 14], mode='markers',
                              name='test class 1'))
-    fig.update_layout(title='AUC')
+    fig.update_layout(title='Dataset')
     fig.show()
 
 

@@ -20,7 +20,7 @@ class cPDS:
         self.L = L
         self.old_x = x
 
-    def compute(self, lambdaa): # lambdaa[j]
+    def compute(self, lambdaa):  # lambdaa[j]
         # x-Update
         beta_k_j = self.x[:-1]
         beta_k_j0 = self.x[-1]
