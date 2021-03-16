@@ -42,24 +42,13 @@ def initcPDSVar(m, xtrain, gammas, n, data, labels):
         q[j] = gammas[j] * (np.einsum('ij,ij->i',
                                       np.concatenate((np.diag(labels[j]) @ data[j], labels[j].reshape(n[j], 1)), axis=1),
                                       np.tile(x[j, :], (n[j], 1))) - y[j])
-
     return x, q
 
 
 def compute_auc(w_param, b_param, xtest, ytest, classes):
     pred_vals_cPDS = xtest @ w_param + b_param
-    '''thresholds = np.sort(pred_vals_cPDS, axis=0)
-    miss = np.zeros(thresholds.size)
-    false_alarm = np.zeros(thresholds.size)
-    for i_thr in range(thresholds.size):
-        ypred = (pred_vals_cPDS >= thresholds[i_thr]) + 0
-        ypred[ypred == 0] = classes[0]
-        miss[i_thr] = np.sum(np.logical_and(ypred == classes[0], ytest == classes[1])) / np.sum(ytest == classes[1])
-        false_alarm[i_thr] = np.sum(np.logical_and(ypred == classes[1], ytest == classes[0])) / np.sum(ytest == classes[0])
-
-    return np.abs(np.trapz(false_alarm, 1 - miss))'''
     fpr, tpr, thresholds = roc_curve(ytest, pred_vals_cPDS, pos_label=classes[1])
-    return auc(fpr, tpr)
+    return auc(fpr, tpr), fpr, tpr
 
 
 def save_auc(m, gp_param, auc_cPDS):

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 import util
@@ -6,14 +7,11 @@ import graph_util
 import param_tuning
 import train_cPDS
 import train_cPDS_not_enc
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
 
 def load_data():
-    #xtrain, ytrain, xtest, ytest = load_save_data.loadData()
-    #xtrain, ytrain, xtest, ytest = load_save_data.loadData_extra()
-    xtrain, ytrain, xtest, ytest = load_save_data.loadData_extra_mat()
-
+    xtrain, ytrain, xtest, ytest = load_save_data.loadData()
     x_opt, w_SSVM, b_SSVM = load_save_data.loadDataCentralized()
     classes = np.unique(ytrain)
     return xtrain, ytrain, xtest, ytest, classes, x_opt, w_SSVM, b_SSVM
@@ -25,62 +23,55 @@ def load_cPDS_parameters(m):
     return n, gammas, data, labels, x_init, q
 
 
-def compute_auc(w_cPDS, b_cPDS, xtest, ytest, classes):
-    return util.compute_auc(w_cPDS, b_cPDS, xtest, ytest, classes)
+def plot(m, p, fpr, tpr, roc_auc, fpr1, tpr1, roc_auc1):
+    plt.title('Receiver Operating Characteristic')
+    plt.plot(fpr, tpr, 'b', label='AUC enc= %0.2f' % roc_auc)
+    plt.plot(fpr1, tpr1, 'g', label='AUC= %0.2f' % roc_auc1)
+    plt.legend(loc='lower right')
+    plt.plot([0, 1], [0, 1], 'r--')
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
 
+    path = 'logs' + os.sep + 'graph' + os.sep + 'auc_graph'
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-def plot(w_cPDS, b_cPDS, w_SSVM, b_SSVM, xtrain, xtest, ytrain, ytest, classes):
-    x1 = np.arange(-2 + np.min(np.concatenate((xtrain[:, 9], xtest[:, 9]), axis=0)),
-                   np.max(np.concatenate((xtrain[:, 9], xtest[:, 9]), axis=0)) + 2, 0.1)
-    x2_cPDS = (-w_cPDS[9] / w_cPDS[14]) * x1 - b_cPDS / w_cPDS[14]
-    x2_SSVM = (-w_SSVM[0] / w_SSVM[1]) * x1 - b_SSVM / w_SSVM[1]
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=xtrain[ytrain == classes[0], 9], y=xtrain[ytrain == classes[0], 14], mode='markers',
-                             name='training class 0'))
-    fig.add_trace(go.Scatter(x=xtrain[ytrain == classes[1], 9], y=xtrain[ytrain == classes[1], 14], mode='markers',
-                             name='training class 1'))
-    fig.add_trace(go.Scatter(x=xtest[ytest == classes[0], 9], y=xtest[ytest == classes[0], 14], mode='markers',
-                             name='test class 0'))
-    fig.add_trace(go.Scatter(x=xtest[ytest == classes[1], 9], y=xtest[ytest == classes[1], 14], mode='markers',
-                             name='test class 1'))
-    fig.add_trace(go.Scatter(x=x1, y=x2_SSVM, mode='lines', name='SSVM'))
-    fig.add_trace(go.Scatter(x=x1, y=x2_cPDS, mode='lines', name='cPDS'))
-    fig.update_layout(title='AUC')
-    fig.show()
+    plt.savefig(path + os.sep + 'auc_graph_' + str(m) + '_' + str(p) + '.png')
+    plt.show()
 
 
 if __name__ == "__main__":
     xtrain, ytrain, xtest, ytest, classes, x_opt, w_SSVM, b_SSVM = load_data()
-    max_iters = 1000
+    max_iters = 100
 
-    #gp = [0.2, 0.5, 1]
-    gp = [0.1]
+    gp = [0.2, 0.5, 1]
     for j in gp:
         #agents = [5, 10, 20, 30]
-        agents = [10]
+        agents = [5, 10]
         for i in agents:
             L = graph_util.get_graph(i, j)
             n, gammas, data, labels, x_init, q = load_cPDS_parameters(i)
 
             # run parameters tuning
-            t, tau, rho = param_tuning.tuning(i, 2000, L, xtrain, ytrain, classes)
+            t, tau, rho = param_tuning.tuning(i, 200, L, xtrain, ytrain, xtest, ytest, classes)
             theta = t + np.random.uniform(0, 1, i)
 
             # run cPDS with encryption
-            #w_cPDS, b_cPDS = train_cPDS.train_cPDS(i, j, max_iters, L, tau, rho, n, gammas, data, labels, x_init,
-                                                   #q, theta)
-            #auc = compute_auc(w_cPDS, b_cPDS, xtest, ytest, classes)
-            #print('cPDS AUC enc: ', auc)
-            #util.save_auc(i, j, auc)
+            w_cPDS, b_cPDS = train_cPDS.train_cPDS(i, j, max_iters, L, tau, rho, n, gammas, data, labels, x_init,
+                                                   q, theta)
+            auc, fpr, tpr = util.compute_auc(w_cPDS, b_cPDS, xtest, ytest, classes)
+            print('cPDS AUC enc: ', auc)
+            util.save_auc(i, j, auc)
 
             # run cPDS without encryption
             w_cPDS_not_enc, b_cPDS_not_enc = train_cPDS_not_enc.train_cPDS_not_enc(i, j, max_iters, L, tau, rho, n,
                                                                                    gammas, data, labels, x_init, q, theta)
-            auc = compute_auc(w_cPDS_not_enc, b_cPDS_not_enc, xtest, ytest, classes)
-            print('cPDS AUC not_enc: ', auc)
-            util.save_auc(i, j, auc)
+            auc1, fpr1, tpr1 = util.compute_auc(w_cPDS_not_enc, b_cPDS_not_enc, xtest, ytest, classes)
+            print('cPDS AUC not_enc: ', auc1)
+            util.save_auc(i, j, auc1)
 
-            #plot(w_cPDS_not_enc, b_cPDS_not_enc, w_SSVM, b_SSVM, xtrain, xtest, ytrain, ytest, classes)
+            plot(i, j, fpr, tpr, auc, fpr1, tpr1, auc1)
 
-        #load_save_data.compute_time_csv(agents, j)
+        load_save_data.compute_time_csv(agents, j)

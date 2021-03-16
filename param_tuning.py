@@ -1,19 +1,15 @@
 import numpy as np
-from sklearn.model_selection import train_test_split
 
 import util
-import cPDS
 import train_cPDS_not_enc
 
 
-def tuning(n_agent, max_iters, L, data_train, labels, classes):
-    # return 25, 10, 10
-
+def tuning(n_agent, max_iters, L, xtrain, ytrain, xtest, ytest, classes):
     ts = [1, 1, 1, 5, 5, 5, 10, 10, 10, 25, 25, 25]
     taus = [0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10]
     rhos = [0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10]
 
-    xtrain, xtest, ytrain, ytest = train_test_split(data_train, labels)
+    #xtrain, xtest, ytrain, ytest = train_test_split(data_train, labels)
     n, gammas, data, labels = util.federatedData(n_agent, xtrain, ytrain)
     x_init, q = util.initcPDSVar(n_agent, xtrain, gammas, n, data, labels)
 
@@ -25,58 +21,11 @@ def tuning(n_agent, max_iters, L, data_train, labels, classes):
 
         theta = t + np.random.uniform(0, 1, n_agent)
 
-        w_cPDS, b_cPDS = train(n_agent, max_iters, L, t, tau, rho, n, gammas, data, labels, x_init, q)
-        #w_cPDS, b_cPDS = train_cPDS_not_enc.train_cPDS_not_enc(n_agent, 'tuning', max_iters, L, tau, rho, n, gammas, data, labels, x_init, q, theta)
-        auc[param_idx] = util.compute_auc(w_cPDS, b_cPDS, xtest, ytest, classes)
+        w_cPDS, b_cPDS = train_cPDS_not_enc.train_cPDS_not_enc(n_agent, 'tuning', max_iters, L, tau, rho, n, gammas, data, labels, x_init, q, theta)
+        auc[param_idx], _, _ = util.compute_auc(w_cPDS, b_cPDS, xtest, ytest, classes)
         print('AUC: ', auc[param_idx], ', t: ', ts[param_idx], ', tau: ', taus[param_idx], ', rho: ', rhos[param_idx])
 
     max_auc = auc.argmax()
     print('Optimal cPDS parameters: ', 't: ', ts[max_auc], ', tau: ', taus[max_auc], ', rho: ', rhos[max_auc],
           '. Maximum training AUC=', auc[max_auc])
     return ts[max_auc], taus[max_auc], rhos[max_auc]
-
-
-def train(n_agent, max_iters, L, t, tau, rho, n, gammas, data, labels, x, q):
-    m = n_agent
-    theta = t + np.random.uniform(0, 1, m)
-
-    cPDSs = []
-    for j in range(m):
-        cPDSs.append(cPDS.cPDS(j, tau, rho, theta[j], gammas[j], data[j], labels[j], q[j], n[j], x[j], L[j]))
-
-    lambdaa = L @ x
-
-    for i in range(max_iters):
-        x = np.asarray([cPDSs[node].compute(lambdaa[node]) for node in range(m)])
-
-        # encrypt for node
-        lambdaa_kplus1 = np.empty(shape=lambdaa.shape)
-        for node in range(m):
-            res = compute_Lx(L[node], x)
-            lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], res)
-
-        lambdaa = lambdaa_kplus1
-
-    x_return = np.mean(x, axis=0)
-    w_cPDS = x_return[:-1]
-    b_cPDS = x_return[-1]
-    return w_cPDS, b_cPDS
-
-
-def aggregator_sum(node, L, lambdaa_k, x):
-    tmp_sum = np.zeros(shape=lambdaa_k.shape)
-    for j in range(len(L)):
-        if L[j] != 0:
-            tmp_sum += x[j]
-
-    lambdaa_kplus1 = lambdaa_k + tmp_sum
-    return lambdaa_kplus1
-
-
-def compute_Lx(L, x):
-    res = np.zeros(shape=x.shape)
-    for i in range(len(L)):
-        if L[i] != 0:
-            res[i] = L[i] * x[i]
-
-    return res
