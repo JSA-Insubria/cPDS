@@ -168,6 +168,15 @@ class PaillierPublicKey(object):
             self.enc_ri = self.encrypt(self.ri)
             self.enc_ri_neg = self.encrypt(-self.ri)
 
+    def serialize(self):
+        return {'g': self.g,
+                'ri': self.ri,
+                'n': self.n}
+
+    @staticmethod
+    def deserialize(obj_pk):
+        return PaillierPublicKey(obj_pk['n'], obj_pk['g'], obj_pk['ri'])
+
     def __repr__(self):
         publicKeyHash = hex(hash(self))[2:]
         return "<PaillierPublicKey {}>".format(publicKeyHash[:10])
@@ -586,6 +595,23 @@ class EncryptedNumber(object):
             raise TypeError('ciphertext should be an integer')
         if not isinstance(self.public_key, PaillierPublicKey):
             raise TypeError('public_key should be a PaillierPublicKey')
+
+    def serialize(self):
+        return {'public_key': self.public_key.serialize(),
+                'ciphertext': str(self.__ciphertext),
+                'exponent': str(self.exponent),
+                'is_obfuscated': self.__is_obfuscated}
+
+    @staticmethod
+    def deserialize(obj_ser):
+        public_key = PaillierPublicKey.deserialize(obj_ser['public_key'])
+        encrypted_number = EncryptedNumber(public_key,
+                               obj_ser['ciphertext'],
+                               obj_ser['exponent'])
+        if obj_ser['is_obfuscated'] == 'True':
+            encrypted_number.obfuscate()
+
+        return encrypted_number
 
     def __add__(self, other):
         """Add an int, float, `EncryptedNumber` or `EncodedNumber`."""

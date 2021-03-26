@@ -48,8 +48,7 @@ if __name__ == "__main__":
 
     gp = [0.2, 0.5, 1]
     for j in gp:
-        #agents = [5, 10, 20, 30]
-        agents = [5, 10]
+        agents = [5, 10, 20, 30]
         for i in agents:
             L = graph_util.get_graph(i, j)
             n, gammas, data, labels, x_init, q = load_cPDS_parameters(i)
