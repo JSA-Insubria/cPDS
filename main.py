@@ -54,8 +54,16 @@ if __name__ == "__main__":
             n, gammas, data, labels, x_init, q = load_cPDS_parameters(i)
 
             # run parameters tuning
-            t, tau, rho = param_tuning.tuning(i, 200, L, xtrain, ytrain, xtest, ytest, classes)
+            t, tau, rho = param_tuning.tuning(i, 2000, L, xtrain, ytrain, xtest, ytest, classes)
             theta = t + np.random.uniform(0, 1, i)
+
+            # run cPDS without encryption
+            w_cPDS_not_enc, b_cPDS_not_enc = train_cPDS_not_enc.train_cPDS_not_enc(i, j, max_iters, L, tau, rho, n,
+                                                                                   gammas, data, labels, x_init, q,
+                                                                                   theta)
+            auc1, fpr1, tpr1 = util.compute_auc(w_cPDS_not_enc, b_cPDS_not_enc, xtest, ytest, classes)
+            print('cPDS AUC not_enc: ', auc1)
+            util.save_auc(i, j, auc1)
 
             # run cPDS with encryption
             w_cPDS, b_cPDS = train_cPDS.train_cPDS(i, j, max_iters, L, tau, rho, n, gammas, data, labels, x_init,
@@ -63,13 +71,6 @@ if __name__ == "__main__":
             auc, fpr, tpr = util.compute_auc(w_cPDS, b_cPDS, xtest, ytest, classes)
             print('cPDS AUC enc: ', auc)
             util.save_auc(i, j, auc)
-
-            # run cPDS without encryption
-            w_cPDS_not_enc, b_cPDS_not_enc = train_cPDS_not_enc.train_cPDS_not_enc(i, j, max_iters, L, tau, rho, n,
-                                                                                   gammas, data, labels, x_init, q, theta)
-            auc1, fpr1, tpr1 = util.compute_auc(w_cPDS_not_enc, b_cPDS_not_enc, xtest, ytest, classes)
-            print('cPDS AUC not_enc: ', auc1)
-            util.save_auc(i, j, auc1)
 
             plot(i, j, fpr, tpr, auc, fpr1, tpr1, auc1)
 

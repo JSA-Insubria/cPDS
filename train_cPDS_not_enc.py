@@ -41,7 +41,7 @@ def aggregator_sum(node, L, lambdaa_k, x):
 
 
 def agent_encrypt(L, x, node, enc_time_nodes):
-    x_enc_node = np.empty(shape=x.shape)
+    x_enc_node = np.zeros(shape=x.shape)
     key = 0
     for other_node in range(len(L)):
         if L[other_node] != 0:
@@ -59,13 +59,13 @@ def agent_encrypt(L, x, node, enc_time_nodes):
 
 
 def main_decrypt(lambdaa_encrypted):
-    lambdaa = np.empty(lambdaa_encrypted.shape)
+    lambdaa = np.zeros(lambdaa_encrypted.shape)
     for node in range(m):
         time_pre = datetime.datetime.now()
         #lambdaa[node] = keys_dict['msk' + str(node)].decryptMatrix(lambdaa_encrypted[node])
         save_time('agent_dec_' + str(node), time_pre)
 
-    return lambdaa
+    return lambdaa_encrypted
 
 
 def train_cPDS_not_enc(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, data, labels, x, q, theta):
@@ -86,7 +86,7 @@ def train_cPDS_not_enc(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, 
         x = np.asarray([cPDSs[node].compute(lambdaa[node]) for node in range(m)])
 
         # encrypt for node
-        lambdaa_kplus1 = np.empty(shape=lambdaa.shape)
+        lambdaa_kplus1 = np.zeros(shape=lambdaa.shape)
         enc_time_nodes = np.zeros(shape=m)
         for node in range(m):
             res = compute_Lx(L[node], x)

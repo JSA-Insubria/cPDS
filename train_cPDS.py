@@ -60,7 +60,7 @@ def agent_encrypt(keys_dict, L, x, node, enc_time_nodes):
 
 
 def main_decrypt(keys_dict, lambdaa_encrypted):
-    lambdaa = np.empty(lambdaa_encrypted.shape)
+    lambdaa = np.zeros(lambdaa_encrypted.shape)
     for node in range(m):
         time_pre = datetime.datetime.now()
         lambdaa[node] = keys_dict['msk' + str(node)].decryptMatrix(lambdaa_encrypted[node])
@@ -76,7 +76,7 @@ def train_cPDS(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, data, la
     gp_param = graph_param
 
     keys_dict = key_gen_util.gen_keys(L)
-    x = np.empty(shape=x_init.shape, dtype=object)
+    x = np.zeros(shape=x_init.shape, dtype=object)
 
     cPDSs = []
     for j in range(m):
