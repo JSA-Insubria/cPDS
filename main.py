@@ -42,7 +42,7 @@ def plot(m, p, fpr, tpr, roc_auc, fpr1, tpr1, roc_auc1):
     plt.show()
 
 
-'''if __name__ == "__main__":
+if __name__ == "__main__":
     xtrain, ytrain, xtest, ytest, classes, x_opt, w_SSVM, b_SSVM = load_data()
     max_iters = 100
 
@@ -74,8 +74,10 @@ def plot(m, p, fpr, tpr, roc_auc, fpr1, tpr1, roc_auc1):
 
             plot(i, j, fpr, tpr, auc, fpr1, tpr1, auc1)
 
-        load_save_data.compute_time_csv(agents, j)'''
+        load_save_data.compute_time_csv(agents, j)
 
+
+'''
 
 # compute auc mean
 def save_mean_auc(m, gp_param, auc_cPDS):
@@ -91,8 +93,8 @@ if __name__ == "__main__":
     for j in gp:
         agents = [5, 10, 20, 30]
         for i in agents:
-            auc_mean = np.zeros(3)
-            for time in range(3):
+            auc_mean = np.zeros(10)
+            for time in range(10):
 
                 L = graph_util.get_graph(i, j)
                 n, gammas, data, labels, x_init, q = load_cPDS_parameters(i)
@@ -113,3 +115,5 @@ if __name__ == "__main__":
             np.delete(auc_mean, auc_mean.argmin())
             np.delete(auc_mean, auc_mean.argmax())
             save_mean_auc(i, j, auc_mean.mean())
+
+'''

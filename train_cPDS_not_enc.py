@@ -3,6 +3,7 @@ import numpy as np
 
 import load_save_data
 import cPDS
+import key_gen_util
 
 
 gp_param = 0
@@ -27,12 +28,15 @@ def compute_Lx(L, x):
     return res
 
 
-def aggregator_sum(node, L, lambdaa_k, x):
+def aggregator_sum(node, L, lambdaa_k, x, alone_list):
     time_pre = datetime.datetime.now()
     tmp_sum = np.zeros(shape=lambdaa_k.shape)
     for j in range(len(L)):
         if L[j] != 0:
             tmp_sum += x[j]
+
+    if alone_list != -1:
+        tmp_sum += x[alone_list]
 
     lambdaa_kplus1 = lambdaa_k + tmp_sum
     save_time('agent_sum_' + str(node), time_pre)
@@ -74,6 +78,8 @@ def train_cPDS_not_enc(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, 
     m = n_agent
     gp_param = graph_param
 
+    alone_list = key_gen_util.get_alone_listL(L)
+
     cPDSs = []
     for j in range(m):
         cPDSs.append(cPDS.cPDS(j, tau, rho, theta[j], gammas[j], data[j], labels[j], q[j], n[j], x[j], L[j]))
@@ -91,7 +97,7 @@ def train_cPDS_not_enc(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, 
         for node in range(m):
             res = compute_Lx(L[node], x)
             x_enc, enc_time_nodes = agent_encrypt(L[node], res, node, enc_time_nodes)
-            lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], res)
+            lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], res, alone_list[node])
 
         # save agent time
         [save_time_enc('agent_enc_' + str(node), enc_time_nodes[node]) for node in range(m)]

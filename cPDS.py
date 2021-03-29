@@ -18,7 +18,7 @@ class cPDS:
         self.n = n
         self.agent_id = agent_id
         self.L = L
-        self.old_x = x
+        self.check = True
 
     def compute(self, lambdaa):  # lambdaa[j]
         # x-Update
@@ -68,8 +68,5 @@ class cPDS:
              self.labels.reshape(-1, 1)), axis=1), np.tile(self.x, (self.n, 1)))) - y)
 
         self.lamda_kminus1 = lambdaa
-
-        if np.count_nonzero(self.L) == 2:
-            self.x += self.old_x
 
         return self.x

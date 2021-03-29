@@ -28,12 +28,15 @@ def compute_Lx(L, x):
     return res
 
 
-def aggregator_sum(node, L, lambdaa_k, x):
+def aggregator_sum(node, L, lambdaa_k, x, alone_list):
     time_pre = datetime.datetime.now()
     tmp_sum = np.zeros(shape=lambdaa_k.shape, dtype=object)
     for j in range(len(L)):
         if L[j] != 0:
             tmp_sum += x[j]
+
+    if alone_list != -1:
+        tmp_sum += x[alone_list]
 
     lambdaa_kplus1 = lambdaa_k + tmp_sum
     save_time('agent_sum_' + str(node), time_pre)
@@ -41,7 +44,7 @@ def aggregator_sum(node, L, lambdaa_k, x):
     return lambdaa_kplus1
 
 
-def agent_encrypt(keys_dict, L, x, node, enc_time_nodes):
+def agent_encrypt(keys_dict, L, x, node, enc_time_nodes, alone_list):
     x_enc_node = np.zeros(shape=x.shape, dtype=object)
     key = 0
     for other_node in range(len(L)):
@@ -55,6 +58,9 @@ def agent_encrypt(keys_dict, L, x, node, enc_time_nodes):
                 time_pre = datetime.datetime.now()
                 x_enc_node[other_node] = keys_dict['pk_list' + str(node)][-1].encryptMatrix(x[other_node])
                 enc_time_nodes[other_node] += (datetime.datetime.now() - time_pre).total_seconds()
+
+    if alone_list != -1:
+        x_enc_node[alone_list] = keys_dict['pk_list' + str(node)][-2].encryptMatrix(x[alone_list])
 
     return x_enc_node, enc_time_nodes
 
@@ -74,6 +80,8 @@ def train_cPDS(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, data, la
     global m, gp_param
     m = n_agent
     gp_param = graph_param
+
+    alone_list = key_gen_util.get_alone_listL(L)
 
     keys_dict = key_gen_util.gen_keys(L)
     x = np.zeros(shape=x_init.shape, dtype=object)
@@ -95,8 +103,8 @@ def train_cPDS(n_agent, graph_param, max_iters, L, tau, rho, n, gammas, data, la
         enc_time_nodes = np.zeros(shape=m)
         for node in range(m):
             res = compute_Lx(L[node], x)
-            x_enc, enc_time_nodes = agent_encrypt(keys_dict, L[node], res, node, enc_time_nodes)
-            lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], x_enc)
+            x_enc, enc_time_nodes = agent_encrypt(keys_dict, L[node], res, node, enc_time_nodes, alone_list[node])
+            lambdaa_kplus1[node] = aggregator_sum(node, L[node], lambdaa[node], x_enc, alone_list[node])
 
         # save agent time
         [save_time_enc('agent_enc_' + str(node), enc_time_nodes[node]) for node in range(m)]
