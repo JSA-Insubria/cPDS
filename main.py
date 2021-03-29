@@ -42,7 +42,7 @@ def plot(m, p, fpr, tpr, roc_auc, fpr1, tpr1, roc_auc1):
     plt.show()
 
 
-if __name__ == "__main__":
+'''if __name__ == "__main__":
     xtrain, ytrain, xtest, ytest, classes, x_opt, w_SSVM, b_SSVM = load_data()
     max_iters = 100
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
             n, gammas, data, labels, x_init, q = load_cPDS_parameters(i)
 
             # run parameters tuning
-            t, tau, rho = param_tuning.tuning(i, 2000, L, xtrain, ytrain, xtest, ytest, classes)
+            t, tau, rho = param_tuning.tuning(i, 200, L, xtrain, ytrain, classes)
             theta = t + np.random.uniform(0, 1, i)
 
             # run cPDS without encryption
@@ -74,4 +74,42 @@ if __name__ == "__main__":
 
             plot(i, j, fpr, tpr, auc, fpr1, tpr1, auc1)
 
-        load_save_data.compute_time_csv(agents, j)
+        load_save_data.compute_time_csv(agents, j)'''
+
+
+# compute auc mean
+def save_mean_auc(m, gp_param, auc_cPDS):
+    with open('logs' + os.sep + "auc_mean.csv", 'a') as fd:
+        fd.write(str(m) + ',' + str(gp_param) + ',' + str(auc_cPDS) + '\n')
+
+
+if __name__ == "__main__":
+    xtrain, ytrain, xtest, ytest, classes, x_opt, w_SSVM, b_SSVM = load_data()
+    max_iters = 100
+
+    gp = [0.2, 0.5, 1]
+    for j in gp:
+        agents = [5, 10, 20, 30]
+        for i in agents:
+            auc_mean = np.zeros(3)
+            for time in range(3):
+
+                L = graph_util.get_graph(i, j)
+                n, gammas, data, labels, x_init, q = load_cPDS_parameters(i)
+
+                # run parameters tuning
+                t, tau, rho = param_tuning.tuning(i, 200, L, xtrain, ytrain, classes)
+                theta = t + np.random.uniform(0, 1, i)
+
+                # run cPDS without encryption
+                w_cPDS_not_enc, b_cPDS_not_enc = train_cPDS_not_enc.train_cPDS_not_enc(i, j, max_iters, L, tau, rho, n,
+                                                                                       gammas, data, labels, x_init, q,
+                                                                                       theta)
+                auc1, fpr1, tpr1 = util.compute_auc(w_cPDS_not_enc, b_cPDS_not_enc, xtest, ytest, classes)
+                print('cPDS AUC not_enc: ', auc1)
+
+                auc_mean[time] = auc1
+
+            np.delete(auc_mean, auc_mean.argmin())
+            np.delete(auc_mean, auc_mean.argmax())
+            save_mean_auc(i, j, auc_mean.mean())

@@ -15,7 +15,7 @@ def compute_time():
 	json_data = request.get_json()
 	x_enc = json.loads(json_data)
 
-	x = [[phe.EncryptedNumber.deserialize(x_enc[i][j]) for i in range(np.shape(x_enc)[0])] for j in range(np.shape(x_enc)[1])]
+	x = np.asarray([phe.EncryptedNumber.deserialize(x_enc[i]) for i in range(len(x_enc))])
 
 	time_post = datetime.datetime.utcnow().isoformat()
 	result = {'time_post': time_post}

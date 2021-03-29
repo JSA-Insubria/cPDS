@@ -1,15 +1,16 @@
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 import util
 import train_cPDS_not_enc
 
 
-def tuning(n_agent, max_iters, L, xtrain, ytrain, xtest, ytest, classes):
+def tuning(n_agent, max_iters, L, data_train, labels, classes):
     ts = [1, 1, 1, 5, 5, 5, 10, 10, 10, 25, 25, 25]
     taus = [0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10]
     rhos = [0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10, 0.1, 1, 10]
 
-    #xtrain, xtest, ytrain, ytest = train_test_split(data_train, labels)
+    xtrain, xtest, ytrain, ytest = train_test_split(data_train, labels, train_size=0.8, random_state=42)
     n, gammas, data, labels = util.federatedData(n_agent, xtrain, ytrain)
     x_init, q = util.initcPDSVar(n_agent, xtrain, gammas, n, data, labels)
 

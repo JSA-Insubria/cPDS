@@ -175,7 +175,7 @@ class PaillierPublicKey(object):
 
     @staticmethod
     def deserialize(obj_pk):
-        return PaillierPublicKey(obj_pk['n'], obj_pk['g'], obj_pk['ri'])
+        return PaillierPublicKey(int(obj_pk['n']), int(obj_pk['g']), int(obj_pk['ri']))
 
     def __repr__(self):
         publicKeyHash = hex(hash(self))[2:]
@@ -606,8 +606,8 @@ class EncryptedNumber(object):
     def deserialize(obj_ser):
         public_key = PaillierPublicKey.deserialize(obj_ser['public_key'])
         encrypted_number = EncryptedNumber(public_key,
-                               obj_ser['ciphertext'],
-                               obj_ser['exponent'])
+                               int(obj_ser['ciphertext']),
+                               int(obj_ser['exponent']))
         if obj_ser['is_obfuscated'] == 'True':
             encrypted_number.obfuscate()
 

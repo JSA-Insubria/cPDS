@@ -14,12 +14,12 @@ def send_message():
 
     mpk, msk, pk_list, sk_list = phe.generate_cPDS_keypair(m)
     x = np.random.normal(0, 1, (m, xtrain.shape[1] + 1))
-    x_enc = mpk.encryptMatrix(x)
+    x_enc = mpk.encryptMatrix(x[0])
 
     time_pre = datetime.datetime.utcnow()
 
     # Serialize
-    x_enc = [[x_enc[i][j].serialize() for i in range(np.shape(x_enc)[0])] for j in range(np.shape(x_enc)[1])]
+    x_enc = [x_enc[i].serialize() for i in range(len(x_enc))]
 
     res = requests.post("https://cpds-test.herokuapp.com/compute_time/", json=json.dumps(x_enc))
 
