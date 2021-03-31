@@ -1,3 +1,4 @@
+import os
 import json
 import datetime
 import numpy as np
@@ -8,9 +9,8 @@ import phe
 import load_save_data
 
 
-def send_message():
+def send_message(xtrain):
     m = 10
-    xtrain, ytrain, xtest, ytest = load_save_data.loadData()
 
     mpk, msk, pk_list, sk_list = phe.generate_cPDS_keypair(m)
     x = np.random.normal(0, 1, (m, xtrain.shape[1] + 1))
@@ -21,21 +21,32 @@ def send_message():
     # Serialize
     x_enc = [x_enc[i].serialize() for i in range(len(x_enc))]
 
-    res = requests.post("https://cpds-test.herokuapp.com/compute_time/", json=json.dumps(x_enc))
+    #res = requests.post("https://cpds-test-eu.herokuapp.com/compute_time/", json=json.dumps(x_enc))  # EU
+    res = requests.post("https://cpds-test.herokuapp.com/compute_time/", json=json.dumps(x_enc))  # US
 
     res = res.json()
     time_post = datetime.datetime.fromisoformat(res['time_post'])
 
     time = (time_post - time_pre).total_seconds()
-    print(str(time))
     return time
 
 
-if __name__ == "__main__":
-    times = 10
-    sum = 0
-    for i in range(times):
-        sum += send_message()
+# compute auc mean
+def save_mean_communication_time(time):
+    with open('logs' + os.sep + "communication_time_mean.csv", 'a') as fd:
+        fd.write(str(time) + '\n')
 
-    mean = sum / times
-    print('mean: ', mean)
+
+if __name__ == "__main__":
+    xtrain, _, _, _ = load_save_data.loadData()
+
+    times = 10
+    time_sum = 0
+    for i in range(times):
+        time = send_message(xtrain)
+        save_mean_communication_time(time)
+        time_sum += time
+        print(time)
+
+    print('Mean: ', time_sum/times)
+

@@ -7,7 +7,7 @@ from scipy.io import loadmat
 
 # ------- load data -------
 def loadData():
-    mat = loadmat('data' + os.sep + 'cleveland.mat', squeeze_me=True)
+    mat = loadmat('data' + os.sep + 'framingham.mat', squeeze_me=True)
     xtrain = mat['xtrain']
     ytrain = mat['ytrain']
     xtest = mat['xtest']

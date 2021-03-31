@@ -77,9 +77,7 @@ if __name__ == "__main__":
         load_save_data.compute_time_csv(agents, j)
 
 
-'''
-
-# compute auc mean
+'''# compute auc mean
 def save_mean_auc(m, gp_param, auc_cPDS):
     with open('logs' + os.sep + "auc_mean.csv", 'a') as fd:
         fd.write(str(m) + ',' + str(gp_param) + ',' + str(auc_cPDS) + '\n')
@@ -93,7 +91,6 @@ if __name__ == "__main__":
     for j in gp:
         agents = [5, 10, 20, 30]
         for i in agents:
-            auc_mean = np.zeros(10)
             for time in range(10):
 
                 L = graph_util.get_graph(i, j)
@@ -110,10 +107,4 @@ if __name__ == "__main__":
                 auc1, fpr1, tpr1 = util.compute_auc(w_cPDS_not_enc, b_cPDS_not_enc, xtest, ytest, classes)
                 print('cPDS AUC not_enc: ', auc1)
 
-                auc_mean[time] = auc1
-
-            np.delete(auc_mean, auc_mean.argmin())
-            np.delete(auc_mean, auc_mean.argmax())
-            save_mean_auc(i, j, auc_mean.mean())
-
-'''
+                save_mean_auc(i, j, auc1)'''
