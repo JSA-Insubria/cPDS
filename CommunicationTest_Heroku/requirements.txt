@@ -4,3 +4,4 @@ django-heroku
 flask
 datetime
 numpy
+requests

@@ -20,7 +20,6 @@
 """Paillier encryption library for partially homomorphic encryption."""
 import random
 import numpy as np
-import copy
 
 try:
     from collections.abc import Mapping
@@ -167,15 +166,6 @@ class PaillierPublicKey(object):
         if self.ri != 1:
             self.enc_ri = self.encrypt(self.ri)
             self.enc_ri_neg = self.encrypt(-self.ri)
-
-    def serialize(self):
-        return {'g': self.g,
-                'ri': self.ri,
-                'n': self.n}
-
-    @staticmethod
-    def deserialize(obj_pk):
-        return PaillierPublicKey(int(obj_pk['n']), int(obj_pk['g']), int(obj_pk['ri']))
 
     def __repr__(self):
         publicKeyHash = hex(hash(self))[2:]
@@ -597,17 +587,13 @@ class EncryptedNumber(object):
             raise TypeError('public_key should be a PaillierPublicKey')
 
     def serialize(self):
-        return {'public_key': self.public_key.serialize(),
-                'ciphertext': str(self.__ciphertext),
+        return {'ciphertext': str(self.__ciphertext),
                 'exponent': str(self.exponent),
                 'is_obfuscated': self.__is_obfuscated}
 
     @staticmethod
     def deserialize(obj_ser):
-        public_key = PaillierPublicKey.deserialize(obj_ser['public_key'])
-        encrypted_number = EncryptedNumber(public_key,
-                               int(obj_ser['ciphertext']),
-                               int(obj_ser['exponent']))
+        encrypted_number = EncryptedNumber(PaillierPublicKey(2048), int(obj_ser['ciphertext']), int(obj_ser['exponent']))
         if obj_ser['is_obfuscated'] == 'True':
             encrypted_number.obfuscate()
 

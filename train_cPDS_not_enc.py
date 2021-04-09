@@ -35,8 +35,8 @@ def aggregator_sum(node, L, lambdaa_k, x, alone_list):
         if L[j] != 0:
             tmp_sum += x[j]
 
-    if alone_list != -1:
-        tmp_sum += x[alone_list]
+    #if alone_list != -1:
+        #tmp_sum += x[alone_list]
 
     lambdaa_kplus1 = lambdaa_k + tmp_sum
     save_time('agent_sum_' + str(node), time_pre)
