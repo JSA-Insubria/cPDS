@@ -64,36 +64,37 @@ def test_US_to_EU_notenc(xtrain_len):
 
 
 # compute auc mean
-def save_mean_communication_time(time):
-    time.to_csv('logs' + os.sep + "communication_time.csv", mode='a')
+def save_mean_communication_time(time, xtrain_len):
+    time.to_csv('logs' + os.sep + "communication_time" + "_" + str(xtrain_len) + ".csv", mode='a')
 
 
 if __name__ == "__main__":
-    xtrain_len = 5
-    times = 2
+    xtrain_len = [5, 10, 15, 20]
+    times = 10
 
-    # 1 - EU -> US
-    # 2 - IT -> US
-    # 3 - IT -> EU
+    for xt_len in xtrain_len:
+        # 1 - EU -> US
+        # 2 - IT -> US
+        # 3 - IT -> EU
 
-    time_mean_1 = []
-    time_mean_2 = []
-    time_mean_3 = []
-    time_mean_1_notenc = []
-    time_mean_2_notenc = []
-    time_mean_3_notenc = []
+        time_mean_1 = []
+        time_mean_2 = []
+        time_mean_3 = []
+        time_mean_1_notenc = []
+        time_mean_2_notenc = []
+        time_mean_3_notenc = []
 
-    for i in range(times):
-        time_mean_1.append(test_US_to_EU(xtrain_len))
-        time_mean_2.append(test_to_region('US', xtrain_len))
-        time_mean_3.append(test_to_region('EU', xtrain_len))
-        time_mean_1_notenc.append(test_US_to_EU_notenc(xtrain_len))
-        time_mean_2_notenc.append(test_to_region_notenc('US', xtrain_len))
-        time_mean_3_notenc.append(test_to_region('EU', xtrain_len))
+        for j in range(times):
+            time_mean_1.append(test_US_to_EU(xt_len))
+            time_mean_2.append(test_to_region('US', xt_len))
+            time_mean_3.append(test_to_region('EU', xt_len))
+            time_mean_1_notenc.append(test_US_to_EU_notenc(xt_len))
+            time_mean_2_notenc.append(test_to_region_notenc('US', xt_len))
+            time_mean_3_notenc.append(test_to_region('EU', xt_len))
 
-    array = np.array([time_mean_1, time_mean_2, time_mean_3,
-                      time_mean_1_notenc, time_mean_2_notenc, time_mean_3_notenc])
+        array = np.array([time_mean_1, time_mean_2, time_mean_3,
+                          time_mean_1_notenc, time_mean_2_notenc, time_mean_3_notenc])
 
-    time = pd.DataFrame(array.T, columns=['EU->US', 'IT->US', 'IT->EU', 'EU->US_notenc', 'IT->US_notenc', 'IT->EU_notenc'])
-    save_mean_communication_time(time)
+        time = pd.DataFrame(array.T, columns=['EU->US', 'IT->US', 'IT->EU', 'EU->US_notenc', 'IT->US_notenc', 'IT->EU_notenc'])
+        save_mean_communication_time(time, xt_len)
 
